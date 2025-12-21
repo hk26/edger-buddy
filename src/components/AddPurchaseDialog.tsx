@@ -28,7 +28,7 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (itemDescription.trim() && weightGrams) {
+    if (weightGrams) {
       onAdd({
         vepariId,
         date,
@@ -93,14 +93,13 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="item">Item Description *</Label>
+            <Label htmlFor="item">Item Description (Optional)</Label>
             <Input
               id="item"
               value={itemDescription}
               onChange={(e) => setItemDescription(e.target.value)}
               placeholder="e.g., Earrings, Necklace, Bangles"
               className="border-border/50 bg-secondary"
-              required
             />
           </div>
           <div className="space-y-2">

@@ -243,7 +243,7 @@ const VepariDetail = () => {
                       <div>
                         <p className="font-medium text-foreground">
                           {transaction.type === 'purchase'
-                            ? (transaction as any).itemDescription
+                            ? (transaction as any).itemDescription || 'Purchase'
                             : 'Payment'}
                         </p>
                         <p className="text-sm text-muted-foreground">
