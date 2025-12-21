@@ -9,7 +9,7 @@ export interface Purchase {
   id: string;
   vepariId: string;
   date: string;
-  itemDescription: string;
+  itemDescription?: string;
   weightGrams: number;
   ratePerGram?: number;
   notes?: string;
