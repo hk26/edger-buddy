@@ -1,6 +1,6 @@
 import { VepariSummary } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronRight, User, Scale } from 'lucide-react';
+import { ChevronRight, User, Gem } from 'lucide-react';
 
 interface VepariCardProps {
   vepari: VepariSummary;
@@ -60,6 +60,20 @@ export const VepariCard = ({ vepari, onClick }: VepariCardProps) => {
             </p>
           </div>
         </div>
+
+        {vepari.remainingStoneCharges > 0 && (
+          <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+            <div className="flex items-center gap-2">
+              <Gem className="h-4 w-4 text-amber-500" />
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Stone Charges
+              </p>
+            </div>
+            <p className="number-display text-lg font-semibold text-amber-500">
+              ₹{vepari.remainingStoneCharges.toLocaleString('en-IN')}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

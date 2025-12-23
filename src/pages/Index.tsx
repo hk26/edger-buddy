@@ -7,10 +7,11 @@ import { Scale, Users } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { addVepari, getVepariSummaries, getTotalRemaining } = useVepariData();
+  const { addVepari, getVepariSummaries, getTotalRemaining, getTotalRemainingStoneCharges } = useVepariData();
 
   const summaries = getVepariSummaries();
   const totalRemaining = getTotalRemaining();
+  const totalRemainingStoneCharges = getTotalRemainingStoneCharges();
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,6 +43,7 @@ const Index = () => {
         <div className="mb-8 animate-fade-in">
           <TotalSummaryCard
             totalRemaining={totalRemaining}
+            totalRemainingStoneCharges={totalRemainingStoneCharges}
             vepariCount={summaries.length}
           />
         </div>

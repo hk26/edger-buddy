@@ -24,6 +24,7 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
   const [itemDescription, setItemDescription] = useState('');
   const [weightGrams, setWeightGrams] = useState('');
   const [ratePerGram, setRatePerGram] = useState('');
+  const [stoneCharges, setStoneCharges] = useState('');
   const [notes, setNotes] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -32,9 +33,10 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
       onAdd({
         vepariId,
         date,
-        itemDescription: itemDescription.trim(),
+        itemDescription: itemDescription.trim() || undefined,
         weightGrams: parseFloat(weightGrams),
         ratePerGram: ratePerGram ? parseFloat(ratePerGram) : undefined,
+        stoneCharges: stoneCharges ? parseFloat(stoneCharges) : undefined,
         notes: notes.trim() || undefined,
       });
       resetForm();
@@ -47,6 +49,7 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
     setItemDescription('');
     setWeightGrams('');
     setRatePerGram('');
+    setStoneCharges('');
     setNotes('');
   };
 
@@ -111,6 +114,19 @@ export const AddPurchaseDialog = ({ vepariId, onAdd }: AddPurchaseDialogProps) =
               value={ratePerGram}
               onChange={(e) => setRatePerGram(e.target.value)}
               placeholder="7500.00"
+              className="border-border/50 bg-secondary"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="stoneCharges">Stone Charges ₹ (Optional)</Label>
+            <Input
+              id="stoneCharges"
+              type="number"
+              step="0.01"
+              min="0"
+              value={stoneCharges}
+              onChange={(e) => setStoneCharges(e.target.value)}
+              placeholder="Extra charges for stones"
               className="border-border/50 bg-secondary"
             />
           </div>

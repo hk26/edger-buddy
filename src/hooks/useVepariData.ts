@@ -86,11 +86,18 @@ export const useVepariData = () => {
       const totalPaid = vepariPayments.reduce((sum, p) => sum + p.weightGrams, 0);
       const remainingWeight = totalPurchased - totalPaid;
 
+      const totalStoneCharges = vepariPurchases.reduce((sum, p) => sum + (p.stoneCharges || 0), 0);
+      const totalStoneChargesPaid = vepariPayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
+      const remainingStoneCharges = totalStoneCharges - totalStoneChargesPaid;
+
       return {
         ...vepari,
         totalPurchased,
         totalPaid,
         remainingWeight,
+        totalStoneCharges,
+        totalStoneChargesPaid,
+        remainingStoneCharges,
       };
     });
   };
@@ -108,6 +115,11 @@ export const useVepariData = () => {
     return summaries.reduce((sum, s) => sum + s.remainingWeight, 0);
   };
 
+  const getTotalRemainingStoneCharges = () => {
+    const summaries = getVepariSummaries();
+    return summaries.reduce((sum, s) => sum + s.remainingStoneCharges, 0);
+  };
+
   return {
     veparis,
     purchases,
@@ -123,5 +135,6 @@ export const useVepariData = () => {
     getVepariPurchases,
     getVepariPayments,
     getTotalRemaining,
+    getTotalRemainingStoneCharges,
   };
 };
