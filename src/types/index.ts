@@ -12,6 +12,7 @@ export interface Purchase {
   itemDescription?: string;
   weightGrams: number;
   ratePerGram?: number;
+  stoneCharges?: number;
   notes?: string;
 }
 
@@ -22,6 +23,7 @@ export interface Payment {
   weightGrams: number;
   ratePerGram: number;
   amount: number;
+  stoneChargesPaid?: number;
   notes?: string;
 }
 
@@ -29,4 +31,7 @@ export interface VepariSummary extends Vepari {
   totalPurchased: number;
   totalPaid: number;
   remainingWeight: number;
+  totalStoneCharges: number;
+  totalStoneChargesPaid: number;
+  remainingStoneCharges: number;
 }

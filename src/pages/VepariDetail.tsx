@@ -11,6 +11,7 @@ import {
   Wallet,
   Trash2,
   Calendar,
+  Gem,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -65,6 +66,10 @@ const VepariDetail = () => {
   const totalPurchased = purchases.reduce((sum, p) => sum + p.weightGrams, 0);
   const totalPaid = payments.reduce((sum, p) => sum + p.weightGrams, 0);
   const remaining = totalPurchased - totalPaid;
+
+  const totalStoneCharges = purchases.reduce((sum, p) => sum + (p.stoneCharges || 0), 0);
+  const totalStoneChargesPaid = payments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
+  const remainingStoneCharges = totalStoneCharges - totalStoneChargesPaid;
 
   const handleDeleteVepari = () => {
     deleteVepari(id!);
@@ -191,6 +196,65 @@ const VepariDetail = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Stone Charges Summary */}
+        {totalStoneCharges > 0 && (
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <Card className="border-border/50 bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
+                    <Gem className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Total Stone Charges
+                    </p>
+                    <p className="number-display text-lg font-bold text-foreground">
+                      ₹{totalStoneCharges.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/50 bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
+                    <Gem className="h-4 w-4 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Stone Charges Paid
+                    </p>
+                    <p className="number-display text-lg font-bold text-success">
+                      ₹{totalStoneChargesPaid.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-500/30 bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
+                    <Gem className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Stone Charges Remaining
+                    </p>
+                    <p className="number-display text-lg font-bold text-amber-500">
+                      ₹{remainingStoneCharges.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -267,6 +331,18 @@ const VepariDetail = () => {
                           <p className="text-sm text-muted-foreground">
                             ₹{(transaction as any).amount.toLocaleString('en-IN')} @ ₹
                             {(transaction as any).ratePerGram}/g
+                          </p>
+                        )}
+                        {transaction.type === 'purchase' && (transaction as any).stoneCharges > 0 && (
+                          <p className="mt-1 flex items-center gap-1 text-sm text-amber-500">
+                            <Gem className="h-3 w-3" />
+                            Stone: ₹{(transaction as any).stoneCharges.toLocaleString('en-IN')}
+                          </p>
+                        )}
+                        {transaction.type === 'payment' && (transaction as any).stoneChargesPaid > 0 && (
+                          <p className="mt-1 flex items-center gap-1 text-sm text-amber-500">
+                            <Gem className="h-3 w-3" />
+                            Stone Paid: ₹{(transaction as any).stoneChargesPaid.toLocaleString('en-IN')}
                           </p>
                         )}
                       </div>
