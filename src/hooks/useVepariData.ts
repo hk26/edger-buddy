@@ -46,9 +46,18 @@ export const useVepariData = () => {
   };
 
   const deleteVepari = (id: string) => {
-    setVeparis((prev) => prev.filter((v) => v.id !== id));
-    setPurchases((prev) => prev.filter((p) => p.vepariId !== id));
-    setPayments((prev) => prev.filter((p) => p.vepariId !== id));
+    const newVeparis = veparis.filter((v) => v.id !== id);
+    const newPurchases = purchases.filter((p) => p.vepariId !== id);
+    const newPayments = payments.filter((p) => p.vepariId !== id);
+    
+    // Save to localStorage immediately to ensure data persists before navigation
+    localStorage.setItem(STORAGE_KEYS.veparis, JSON.stringify(newVeparis));
+    localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(newPurchases));
+    localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(newPayments));
+    
+    setVeparis(newVeparis);
+    setPurchases(newPurchases);
+    setPayments(newPayments);
   };
 
   const addPurchase = (purchase: Omit<Purchase, 'id'>) => {
