@@ -2,8 +2,9 @@ import { useVepariData } from '@/hooks/useVepariData';
 import { VepariCard } from '@/components/VepariCard';
 import { AddVepariDialog } from '@/components/AddVepariDialog';
 import { TotalSummaryCard } from '@/components/TotalSummaryCard';
-import { useNavigate } from 'react-router-dom';
-import { Scale, Users } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Scale, Users, Database } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -32,7 +33,14 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <AddVepariDialog onAdd={addVepari} />
+            <div className="flex items-center gap-2">
+              <Link to="/backup">
+                <Button variant="outline" size="icon" className="rounded-full border-primary/30 hover:bg-primary/10" title="Backup & Restore">
+                  <Database className="h-4 w-4 text-primary" />
+                </Button>
+              </Link>
+              <AddVepariDialog onAdd={addVepari} />
+            </div>
           </div>
         </div>
       </header>
