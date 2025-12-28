@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Upload, Database, FileJson, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,8 @@ const STORAGE_KEYS = {
 };
 
 const Backup = () => {
+  const navigate = useNavigate();
+  const [importKey, setImportKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -62,11 +64,11 @@ const Backup = () => {
           localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(data.purchases));
           localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(data.payments));
 
-          toast.success('Backup imported successfully! Refreshing...');
+          toast.success('Backup imported successfully! Redirecting...');
           
-          // Reload the page to reflect the changes
+          // Use React Router navigation instead of window.location for Electron compatibility
           setTimeout(() => {
-            window.location.href = '/';
+            navigate('/');
           }, 1500);
         }
       } catch (error) {
