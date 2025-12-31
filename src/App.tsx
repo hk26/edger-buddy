@@ -6,6 +6,7 @@ import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import VepariDetail from "./pages/VepariDetail";
 import Backup from "./pages/Backup";
+import Overdue from "./pages/Overdue";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/vepari/:id" element={<VepariDetail />} />
             <Route path="/backup" element={<Backup />} />
+            <Route path="/overdue" element={<Overdue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
