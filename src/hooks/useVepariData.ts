@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Vepari, Purchase, Payment, VepariSummary } from '@/types';
+import { Vepari, Purchase, Payment, VepariSummary, OverdueItem, UpcomingDueItem, PurchaseStatus } from '@/types';
+import { addDays, differenceInDays, parseISO, startOfDay } from 'date-fns';
 
 const STORAGE_KEYS = {
   veparis: 'gold-tracker-veparis',
@@ -34,12 +35,14 @@ export const useVepariData = () => {
     localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(payments));
   }, [payments]);
 
-  const addVepari = (name: string, phone?: string) => {
+  const addVepari = (name: string, phone?: string, defaultCreditDays?: number, defaultPenaltyPercentPerDay?: number) => {
     const newVepari: Vepari = {
       id: crypto.randomUUID(),
       name,
       phone,
       createdAt: new Date().toISOString(),
+      defaultCreditDays,
+      defaultPenaltyPercentPerDay: defaultCreditDays ? (defaultPenaltyPercentPerDay ?? 0.1) : undefined,
     };
     setVeparis((prev) => [...prev, newVepari]);
     return newVepari;
@@ -50,7 +53,6 @@ export const useVepariData = () => {
     const newPurchases = purchases.filter((p) => p.vepariId !== id);
     const newPayments = payments.filter((p) => p.vepariId !== id);
     
-    // Save to localStorage immediately to ensure data persists before navigation
     localStorage.setItem(STORAGE_KEYS.veparis, JSON.stringify(newVeparis));
     localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(newPurchases));
     localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(newPayments));
@@ -64,6 +66,9 @@ export const useVepariData = () => {
     const newPurchase: Purchase = {
       ...purchase,
       id: crypto.randomUUID(),
+      dueDate: purchase.creditDays 
+        ? addDays(parseISO(purchase.date), purchase.creditDays).toISOString().split('T')[0]
+        : undefined,
     };
     setPurchases((prev) => [...prev, newPurchase]);
     return newPurchase;
@@ -86,6 +91,122 @@ export const useVepariData = () => {
     setPayments((prev) => prev.filter((p) => p.id !== id));
   };
 
+  // Calculate remaining grams for each purchase using FIFO
+  const getPurchaseRemainingGrams = (vepariId: string): Map<string, number> => {
+    const vepariPurchases = purchases
+      .filter((p) => p.vepariId === vepariId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const vepariPayments = payments.filter((p) => p.vepariId === vepariId);
+    let totalPaid = vepariPayments.reduce((sum, p) => sum + p.weightGrams, 0);
+    
+    const remainingMap = new Map<string, number>();
+    
+    for (const purchase of vepariPurchases) {
+      if (totalPaid >= purchase.weightGrams) {
+        remainingMap.set(purchase.id, 0);
+        totalPaid -= purchase.weightGrams;
+      } else {
+        remainingMap.set(purchase.id, purchase.weightGrams - totalPaid);
+        totalPaid = 0;
+      }
+    }
+    
+    return remainingMap;
+  };
+
+  const getPurchaseStatus = (purchase: Purchase, remainingGrams: number): PurchaseStatus => {
+    if (remainingGrams <= 0) return 'paid';
+    if (!purchase.creditDays || !purchase.dueDate) return 'no-credit';
+    
+    const today = startOfDay(new Date());
+    const dueDate = startOfDay(parseISO(purchase.dueDate));
+    const daysDiff = differenceInDays(dueDate, today);
+    
+    if (daysDiff < 0) return 'overdue';
+    if (daysDiff <= 3) return 'upcoming';
+    return 'normal';
+  };
+
+  const getOverdueItems = (): OverdueItem[] => {
+    const today = startOfDay(new Date());
+    const overdueItems: OverdueItem[] = [];
+    
+    for (const vepari of veparis) {
+      const remainingMap = getPurchaseRemainingGrams(vepari.id);
+      const vepariPurchases = purchases.filter((p) => p.vepariId === vepari.id);
+      
+      for (const purchase of vepariPurchases) {
+        const remainingGrams = remainingMap.get(purchase.id) || 0;
+        
+        if (remainingGrams > 0 && purchase.dueDate && purchase.creditDays) {
+          const dueDate = startOfDay(parseISO(purchase.dueDate));
+          const daysOverdue = differenceInDays(today, dueDate);
+          
+          if (daysOverdue > 0) {
+            const penaltyPercent = daysOverdue * (purchase.penaltyPercentPerDay || 0.1);
+            const estimatedAmount = purchase.ratePerGram 
+              ? remainingGrams * purchase.ratePerGram * penaltyPercent / 100
+              : 0;
+            
+            overdueItems.push({
+              purchase,
+              vepari,
+              remainingGrams,
+              daysOverdue,
+              estimatedPenaltyPercent: penaltyPercent,
+              estimatedPenaltyAmount: estimatedAmount,
+            });
+          }
+        }
+      }
+    }
+    
+    return overdueItems.sort((a, b) => b.daysOverdue - a.daysOverdue);
+  };
+
+  const getUpcomingDueItems = (days: number = 3): UpcomingDueItem[] => {
+    const today = startOfDay(new Date());
+    const upcomingItems: UpcomingDueItem[] = [];
+    
+    for (const vepari of veparis) {
+      const remainingMap = getPurchaseRemainingGrams(vepari.id);
+      const vepariPurchases = purchases.filter((p) => p.vepariId === vepari.id);
+      
+      for (const purchase of vepariPurchases) {
+        const remainingGrams = remainingMap.get(purchase.id) || 0;
+        
+        if (remainingGrams > 0 && purchase.dueDate && purchase.creditDays) {
+          const dueDate = startOfDay(parseISO(purchase.dueDate));
+          const daysUntilDue = differenceInDays(dueDate, today);
+          
+          if (daysUntilDue >= 0 && daysUntilDue <= days) {
+            upcomingItems.push({
+              purchase,
+              vepari,
+              remainingGrams,
+              daysUntilDue,
+            });
+          }
+        }
+      }
+    }
+    
+    return upcomingItems.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+  };
+
+  const getTotalOverdueGrams = (): number => {
+    return getOverdueItems().reduce((sum, item) => sum + item.remainingGrams, 0);
+  };
+
+  const getTotalOverduePenalty = (): number => {
+    return getOverdueItems().reduce((sum, item) => sum + item.estimatedPenaltyAmount, 0);
+  };
+
+  const getOverdueCount = (): number => {
+    return getOverdueItems().length;
+  };
+
   const getVepariSummaries = (): VepariSummary[] => {
     return veparis.map((vepari) => {
       const vepariPurchases = purchases.filter((p) => p.vepariId === vepari.id);
@@ -99,6 +220,21 @@ export const useVepariData = () => {
       const totalStoneChargesPaid = vepariPayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
       const remainingStoneCharges = totalStoneCharges - totalStoneChargesPaid;
 
+      // Count overdue items for this vepari
+      const remainingMap = getPurchaseRemainingGrams(vepari.id);
+      const today = startOfDay(new Date());
+      let overdueCount = 0;
+      
+      for (const purchase of vepariPurchases) {
+        const remainingGrams = remainingMap.get(purchase.id) || 0;
+        if (remainingGrams > 0 && purchase.dueDate) {
+          const dueDate = startOfDay(parseISO(purchase.dueDate));
+          if (differenceInDays(today, dueDate) > 0) {
+            overdueCount++;
+          }
+        }
+      }
+
       return {
         ...vepari,
         totalPurchased,
@@ -107,6 +243,7 @@ export const useVepariData = () => {
         totalStoneCharges,
         totalStoneChargesPaid,
         remainingStoneCharges,
+        overdueCount,
       };
     });
   };
@@ -145,5 +282,12 @@ export const useVepariData = () => {
     getVepariPayments,
     getTotalRemaining,
     getTotalRemainingStoneCharges,
+    getPurchaseRemainingGrams,
+    getPurchaseStatus,
+    getOverdueItems,
+    getUpcomingDueItems,
+    getTotalOverdueGrams,
+    getTotalOverduePenalty,
+    getOverdueCount,
   };
 };
