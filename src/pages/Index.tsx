@@ -47,12 +47,12 @@ const Index = () => {
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className={`relative rounded-full border-primary/30 hover:bg-primary/10 ${overdueCount > 0 ? 'border-destructive/50' : ''}`} 
+                  className={`relative rounded-full border-primary/30 hover:bg-primary/10 ${overdueCount > 0 ? 'border-orange-500/50' : ''}`} 
                   title="Overdue & Upcoming"
                 >
-                  <AlertTriangle className={`h-4 w-4 ${overdueCount > 0 ? 'text-destructive' : 'text-primary'}`} />
+                  <AlertTriangle className={`h-4 w-4 ${overdueCount > 0 ? 'text-orange-500' : 'text-primary'}`} />
                   {overdueCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
                       {overdueCount > 9 ? '9+' : overdueCount}
                     </span>
                   )}
@@ -75,10 +75,10 @@ const Index = () => {
           <div className="space-y-2">
             {overdueCount > 0 && (
               <Link to="/overdue">
-                <div className="flex cursor-pointer items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 transition-colors hover:bg-destructive/20">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div className="flex cursor-pointer items-center gap-3 rounded-lg border border-orange-500/30 bg-orange-500/10 p-4 transition-colors hover:bg-orange-500/20">
+                  <AlertTriangle className="h-5 w-5 text-orange-500" />
                   <div className="flex-1">
-                    <p className="font-medium text-destructive">
+                    <p className="font-medium text-orange-500">
                       {overdueCount} overdue payment{overdueCount > 1 ? 's' : ''}!
                     </p>
                     <p className="text-sm text-muted-foreground">
