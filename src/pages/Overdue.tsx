@@ -54,8 +54,8 @@ const Overdue = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/20">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">
@@ -73,17 +73,17 @@ const Overdue = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Summary Cards */}
         <div className="mb-8 grid gap-4 md:grid-cols-3">
-          <Card className="border-destructive/30 bg-card">
+          <Card className="border-orange-500/30 bg-card">
             <CardContent className="p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                  <Scale className="h-5 w-5 text-destructive" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
+                  <Scale className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">
                     Total Overdue Gold
                   </p>
-                  <p className="number-display text-2xl font-bold text-destructive">
+                  <p className="number-display text-2xl font-bold text-orange-500">
                     {totalOverdueGrams.toFixed(2)}
                     <span className="ml-1 text-sm text-muted-foreground">g</span>
                   </p>
@@ -187,12 +187,12 @@ const Overdue = () => {
         {/* Overdue List */}
         <div>
           <div className="mb-4 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
             <h2 className="font-display text-xl font-semibold text-foreground">
               Overdue Payments
             </h2>
             {overdueCount > 0 && (
-              <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-xs font-medium text-destructive">
+              <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-medium text-orange-500">
                 {overdueCount}
               </span>
             )}
@@ -221,14 +221,14 @@ const Overdue = () => {
                     {items.map((item, index) => (
                       <Card
                         key={item.purchase.id}
-                        className="animate-fade-in border-destructive/30 bg-card"
+                        className="animate-fade-in border-orange-500/30 bg-card"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                                <AlertTriangle className="h-5 w-5 text-destructive" />
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
+                                <AlertTriangle className="h-5 w-5 text-orange-500" />
                               </div>
                               <div>
                                 <p className="font-medium text-foreground">
@@ -249,24 +249,24 @@ const Overdue = () => {
                               <p className="number-display text-lg font-semibold text-foreground">
                                 {item.remainingGrams.toFixed(2)}g
                               </p>
-                              <p className="text-sm font-medium text-destructive">
+                              <p className="text-sm font-medium text-orange-500">
                                 {item.daysOverdue} days overdue
                               </p>
                             </div>
                           </div>
                           
                           {/* Penalty Info */}
-                          <div className="mt-3 flex items-center justify-between rounded-lg bg-destructive/5 p-3">
+                          <div className="mt-3 flex items-center justify-between rounded-lg bg-orange-500/5 p-3">
                             <div className="text-sm">
                               <span className="text-muted-foreground">Penalty: </span>
-                              <span className="font-medium text-destructive">
+                              <span className="font-medium text-orange-500">
                                 {item.daysOverdue} days × {item.purchase.penaltyPercentPerDay}% = {item.estimatedPenaltyPercent.toFixed(2)}%
                               </span>
                             </div>
                             {item.estimatedPenaltyAmount > 0 && (
                               <div className="text-sm">
                                 <span className="text-muted-foreground">Est. Amount: </span>
-                                <span className="font-medium text-destructive">
+                                <span className="font-medium text-orange-500">
                                   ₹{item.estimatedPenaltyAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                 </span>
                               </div>

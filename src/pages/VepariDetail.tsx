@@ -101,7 +101,7 @@ const VepariDetail = () => {
         const dueDate = startOfDay(parseISO(purchase.dueDate!));
         const daysOverdue = differenceInDays(today, dueDate);
         return (
-          <Badge variant="destructive" className="bg-destructive/20 text-destructive">
+          <Badge variant="outline" className="border-orange-500/50 bg-orange-500/20 text-orange-500">
             <AlertTriangle className="mr-1 h-3 w-3" />
             {daysOverdue}d overdue
           </Badge>
@@ -352,7 +352,7 @@ const VepariDetail = () => {
                   key={transaction.id}
                   className={`animate-fade-in border-border/50 bg-card ${
                     isPurchase && purchase?.dueDate && getPurchaseStatus(purchase, remainingMap.get(purchase.id) || 0) === 'overdue'
-                      ? 'border-destructive/30'
+                      ? 'border-orange-500/30'
                       : ''
                   }`}
                   style={{ animationDelay: `${index * 50}ms` }}
