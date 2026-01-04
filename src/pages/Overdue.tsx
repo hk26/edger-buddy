@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { MetalBadge, getMetalColorClasses } from '@/components/MetalSelector';
 
 const Overdue = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Overdue = () => {
     getTotalOverdueGrams,
     getTotalOverduePenalty,
     getOverdueCount,
+    getMetals,
   } = useVepariData();
 
   const overdueItems = getOverdueItems();
@@ -28,16 +30,31 @@ const Overdue = () => {
   const totalOverdueGrams = getTotalOverdueGrams();
   const totalPenalty = getTotalOverduePenalty();
   const overdueCount = getOverdueCount();
+  const metals = getMetals();
 
-  // Group overdue items by vepari
-  const groupedOverdue = overdueItems.reduce((acc, item) => {
-    const vepariName = item.vepari.name;
-    if (!acc[vepariName]) {
-      acc[vepariName] = [];
+  // Group overdue items by metal first, then by vepari
+  const groupedByMetal = overdueItems.reduce((acc, item) => {
+    const metalId = item.metal.id;
+    if (!acc[metalId]) {
+      acc[metalId] = { metal: item.metal, items: [] };
     }
-    acc[vepariName].push(item);
+    acc[metalId].items.push(item);
     return acc;
-  }, {} as Record<string, typeof overdueItems>);
+  }, {} as Record<string, { metal: typeof overdueItems[0]['metal']; items: typeof overdueItems }>);
+
+  // Further group by vepari within each metal
+  const groupedByMetalAndVepari = Object.entries(groupedByMetal).map(([metalId, { metal, items }]) => {
+    const byVepari = items.reduce((acc, item) => {
+      const vepariName = item.vepari.name;
+      if (!acc[vepariName]) {
+        acc[vepariName] = [];
+      }
+      acc[vepariName].push(item);
+      return acc;
+    }, {} as Record<string, typeof items>);
+
+    return { metal, byVepari };
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +98,7 @@ const Overdue = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Total Overdue Gold
+                    Total Overdue
                   </p>
                   <p className="number-display text-2xl font-bold text-orange-500">
                     {totalOverdueGrams.toFixed(2)}
@@ -142,49 +159,55 @@ const Overdue = () => {
               </span>
             </div>
             <div className="space-y-3">
-              {upcomingItems.map((item, index) => (
-                <Card
-                  key={`${item.purchase.id}-upcoming`}
-                  className="animate-fade-in border-amber-500/30 bg-card"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10">
-                          <Clock className="h-5 w-5 text-amber-500" />
+              {upcomingItems.map((item, index) => {
+                const colors = getMetalColorClasses(item.metal.color);
+                return (
+                  <Card
+                    key={`${item.purchase.id}-upcoming`}
+                    className="animate-fade-in border-amber-500/30 bg-card"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10">
+                            <Clock className="h-5 w-5 text-amber-500" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <MetalBadge metal={item.metal} size="sm" />
+                              <p className="font-medium text-foreground">
+                                {item.vepari.name}
+                              </p>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {item.purchase.itemDescription || 'Purchase'} •{' '}
+                              {format(parseISO(item.purchase.date), 'dd MMM yyyy')}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {item.vepari.name}
+                        <div className="text-right">
+                          <p className={`number-display text-lg font-semibold ${colors.text}`}>
+                            {item.remainingGrams.toFixed(2)}g
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            {item.purchase.itemDescription || 'Purchase'} •{' '}
-                            {format(parseISO(item.purchase.date), 'dd MMM yyyy')}
+                          <p className="text-sm font-medium text-amber-500">
+                            {item.daysUntilDue === 0
+                              ? 'Due today!'
+                              : item.daysUntilDue === 1
+                              ? 'Due tomorrow'
+                              : `Due in ${item.daysUntilDue} days`}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="number-display text-lg font-semibold text-foreground">
-                          {item.remainingGrams.toFixed(2)}g
-                        </p>
-                        <p className="text-sm font-medium text-amber-500">
-                          {item.daysUntilDue === 0
-                            ? 'Due today!'
-                            : item.daysUntilDue === 1
-                            ? 'Due tomorrow'
-                            : `Due in ${item.daysUntilDue} days`}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Overdue List */}
+        {/* Overdue List - Grouped by Metal */}
         <div>
           <div className="mb-4 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -211,73 +234,89 @@ const Overdue = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedOverdue).map(([vepariName, items]) => (
-                <div key={vepariName}>
-                  <h3 className="mb-3 font-display text-lg font-semibold text-foreground">
-                    {vepariName}
-                  </h3>
-                  <div className="space-y-3">
-                    {items.map((item, index) => (
-                      <Card
-                        key={item.purchase.id}
-                        className="animate-fade-in border-orange-500/30 bg-card"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
-                                <AlertTriangle className="h-5 w-5 text-orange-500" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">
-                                  {item.purchase.itemDescription || 'Purchase'}
-                                </p>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <span>
-                                    Purchased: {format(parseISO(item.purchase.date), 'dd MMM yyyy')}
-                                  </span>
-                                  <span>•</span>
-                                  <span>
-                                    Due: {format(parseISO(item.purchase.dueDate!), 'dd MMM yyyy')}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="number-display text-lg font-semibold text-foreground">
-                                {item.remainingGrams.toFixed(2)}g
-                              </p>
-                              <p className="text-sm font-medium text-orange-500">
-                                {item.daysOverdue} days overdue
-                              </p>
-                            </div>
+            <div className="space-y-8">
+              {groupedByMetalAndVepari.map(({ metal, byVepari }) => {
+                const colors = getMetalColorClasses(metal.color);
+                return (
+                  <div key={metal.id}>
+                    <div className={`mb-4 flex items-center gap-2 rounded-lg ${colors.bg} px-4 py-2`}>
+                      <MetalBadge metal={metal} size="md" />
+                      <h3 className={`font-display text-lg font-semibold ${colors.text}`}>
+                        {metal.name}
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-6 pl-4">
+                      {Object.entries(byVepari).map(([vepariName, items]) => (
+                        <div key={vepariName}>
+                          <h4 className="mb-3 font-display font-semibold text-foreground">
+                            {vepariName}
+                          </h4>
+                          <div className="space-y-3">
+                            {items.map((item, index) => (
+                              <Card
+                                key={item.purchase.id}
+                                className="animate-fade-in border-orange-500/30 bg-card"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
+                                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                                      </div>
+                                      <div>
+                                        <p className="font-medium text-foreground">
+                                          {item.purchase.itemDescription || 'Purchase'}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                          <span>
+                                            Purchased: {format(parseISO(item.purchase.date), 'dd MMM yyyy')}
+                                          </span>
+                                          <span>•</span>
+                                          <span>
+                                            Due: {format(parseISO(item.purchase.dueDate!), 'dd MMM yyyy')}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className={`number-display text-lg font-semibold ${colors.text}`}>
+                                        {item.remainingGrams.toFixed(2)}g
+                                      </p>
+                                      <p className="text-sm font-medium text-orange-500">
+                                        {item.daysOverdue} days overdue
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Penalty Info */}
+                                  <div className="mt-3 flex items-center justify-between rounded-lg bg-orange-500/5 p-3">
+                                    <div className="text-sm">
+                                      <span className="text-muted-foreground">Penalty: </span>
+                                      <span className="font-medium text-orange-500">
+                                        {item.daysOverdue} days × {item.purchase.penaltyPercentPerDay}% = {item.estimatedPenaltyPercent.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                    {item.estimatedPenaltyAmount > 0 && (
+                                      <div className="text-sm">
+                                        <span className="text-muted-foreground">Est. Amount: </span>
+                                        <span className="font-medium text-orange-500">
+                                          ₹{item.estimatedPenaltyAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
-                          
-                          {/* Penalty Info */}
-                          <div className="mt-3 flex items-center justify-between rounded-lg bg-orange-500/5 p-3">
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Penalty: </span>
-                              <span className="font-medium text-orange-500">
-                                {item.daysOverdue} days × {item.purchase.penaltyPercentPerDay}% = {item.estimatedPenaltyPercent.toFixed(2)}%
-                              </span>
-                            </div>
-                            {item.estimatedPenaltyAmount > 0 && (
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">Est. Amount: </span>
-                                <span className="font-medium text-orange-500">
-                                  ₹{item.estimatedPenaltyAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

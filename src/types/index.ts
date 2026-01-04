@@ -1,3 +1,13 @@
+export interface Metal {
+  id: string;
+  name: string;
+  symbol: string;
+  color: string; // Tailwind color class prefix (e.g., "amber", "slate")
+  displayOrder: number;
+  createdAt: string;
+  isDefault?: boolean;
+}
+
 export interface Vepari {
   id: string;
   name: string;
@@ -10,6 +20,7 @@ export interface Vepari {
 export interface Purchase {
   id: string;
   vepariId: string;
+  metalId: string;
   date: string;
   itemDescription?: string;
   weightGrams: number;
@@ -24,6 +35,7 @@ export interface Purchase {
 export interface Payment {
   id: string;
   vepariId: string;
+  metalId: string;
   date: string;
   weightGrams: number;
   ratePerGram: number;
@@ -32,7 +44,26 @@ export interface Payment {
   notes?: string;
 }
 
+export interface MetalSummary {
+  metalId: string;
+  metalName: string;
+  metalSymbol: string;
+  metalColor: string;
+  totalPurchased: number;
+  totalPaid: number;
+  remainingWeight: number;
+  totalStoneCharges: number;
+  totalStoneChargesPaid: number;
+  remainingStoneCharges: number;
+  overdueCount: number;
+}
+
 export interface VepariSummary extends Vepari {
+  metalSummaries: MetalSummary[];
+  totalRemainingWeight: number;
+  totalRemainingStoneCharges: number;
+  totalOverdueCount: number;
+  // Legacy fields for backward compatibility
   totalPurchased: number;
   totalPaid: number;
   remainingWeight: number;
@@ -45,6 +76,7 @@ export interface VepariSummary extends Vepari {
 export interface OverdueItem {
   purchase: Purchase;
   vepari: Vepari;
+  metal: Metal;
   remainingGrams: number;
   daysOverdue: number;
   estimatedPenaltyPercent: number;
@@ -54,6 +86,7 @@ export interface OverdueItem {
 export interface UpcomingDueItem {
   purchase: Purchase;
   vepari: Vepari;
+  metal: Metal;
   remainingGrams: number;
   daysUntilDue: number;
 }

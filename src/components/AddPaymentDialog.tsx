@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,20 +11,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Wallet } from 'lucide-react';
-import { Payment } from '@/types';
+import { Payment, Metal } from '@/types';
+import { MetalSelector } from './MetalSelector';
 
 interface AddPaymentDialogProps {
   vepariId: string;
+  metals: Metal[];
+  defaultMetalId?: string;
   onAdd: (payment: Omit<Payment, 'id'>) => void;
 }
 
-export const AddPaymentDialog = ({ vepariId, onAdd }: AddPaymentDialogProps) => {
+export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: AddPaymentDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [metalId, setMetalId] = useState(defaultMetalId || metals[0]?.id || 'gold');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [weightGrams, setWeightGrams] = useState('');
   const [ratePerGram, setRatePerGram] = useState('');
   const [stoneChargesPaid, setStoneChargesPaid] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Update metalId when defaultMetalId changes
+  useEffect(() => {
+    if (defaultMetalId) {
+      setMetalId(defaultMetalId);
+    }
+  }, [defaultMetalId]);
 
   const goldAmount = weightGrams && ratePerGram
     ? parseFloat(weightGrams) * parseFloat(ratePerGram)
@@ -34,9 +45,10 @@ export const AddPaymentDialog = ({ vepariId, onAdd }: AddPaymentDialogProps) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (weightGrams && ratePerGram) {
+    if (weightGrams && ratePerGram && metalId) {
       onAdd({
         vepariId,
+        metalId,
         date,
         weightGrams: parseFloat(weightGrams),
         ratePerGram: parseFloat(ratePerGram),
@@ -55,7 +67,10 @@ export const AddPaymentDialog = ({ vepariId, onAdd }: AddPaymentDialogProps) => 
     setRatePerGram('');
     setStoneChargesPaid('');
     setNotes('');
+    // Keep metalId as is
   };
+
+  const selectedMetal = metals.find((m) => m.id === metalId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -70,9 +85,22 @@ export const AddPaymentDialog = ({ vepariId, onAdd }: AddPaymentDialogProps) => 
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <Wallet className="h-5 w-5 text-primary" />
             Record Payment
+            {selectedMetal && (
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium bg-${selectedMetal.color}-500/10 text-${selectedMetal.color}-500`}>
+                {selectedMetal.name}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Metal Selector */}
+          <MetalSelector
+            metals={metals}
+            value={metalId}
+            onChange={setMetalId}
+            label="Metal *"
+          />
+
           <div className="space-y-2">
             <Label htmlFor="date">Payment Date *</Label>
             <Input
@@ -127,7 +155,7 @@ export const AddPaymentDialog = ({ vepariId, onAdd }: AddPaymentDialogProps) => 
           </div>
           <div className="rounded-lg bg-primary/10 p-4 space-y-2">
             <div>
-              <p className="text-sm text-muted-foreground">Gold Amount</p>
+              <p className="text-sm text-muted-foreground">{selectedMetal?.name || 'Metal'} Amount</p>
               <p className="number-display text-xl font-bold text-primary">
                 ₹{goldAmount.toLocaleString('en-IN')}
               </p>

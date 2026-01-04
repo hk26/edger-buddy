@@ -12,17 +12,21 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ShoppingBag, Calendar } from 'lucide-react';
-import { Purchase, Vepari } from '@/types';
+import { Purchase, Vepari, Metal } from '@/types';
 import { format, addDays, parseISO } from 'date-fns';
+import { MetalSelector } from './MetalSelector';
 
 interface AddPurchaseDialogProps {
   vepariId: string;
   vepari?: Vepari;
+  metals: Metal[];
+  defaultMetalId?: string;
   onAdd: (purchase: Omit<Purchase, 'id'>) => void;
 }
 
-export const AddPurchaseDialog = ({ vepariId, vepari, onAdd }: AddPurchaseDialogProps) => {
+export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, onAdd }: AddPurchaseDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [metalId, setMetalId] = useState(defaultMetalId || metals[0]?.id || 'gold');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [itemDescription, setItemDescription] = useState('');
   const [weightGrams, setWeightGrams] = useState('');
@@ -32,6 +36,13 @@ export const AddPurchaseDialog = ({ vepariId, vepari, onAdd }: AddPurchaseDialog
   const [trackCredit, setTrackCredit] = useState(false);
   const [creditDays, setCreditDays] = useState('');
   const [penaltyPercent, setPenaltyPercent] = useState('0.1');
+
+  // Update metalId when defaultMetalId changes
+  useEffect(() => {
+    if (defaultMetalId) {
+      setMetalId(defaultMetalId);
+    }
+  }, [defaultMetalId]);
 
   // Pre-fill credit settings from vepari defaults when dialog opens
   useEffect(() => {
@@ -44,9 +55,10 @@ export const AddPurchaseDialog = ({ vepariId, vepari, onAdd }: AddPurchaseDialog
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (weightGrams) {
+    if (weightGrams && metalId) {
       onAdd({
         vepariId,
+        metalId,
         date,
         itemDescription: itemDescription.trim() || undefined,
         weightGrams: parseFloat(weightGrams),
@@ -71,11 +83,14 @@ export const AddPurchaseDialog = ({ vepariId, vepari, onAdd }: AddPurchaseDialog
     setTrackCredit(false);
     setCreditDays('');
     setPenaltyPercent('0.1');
+    // Keep the metalId as is (don't reset)
   };
 
   const calculatedDueDate = trackCredit && creditDays && date
     ? format(addDays(parseISO(date), parseInt(creditDays)), 'dd MMM yyyy')
     : null;
+
+  const selectedMetal = metals.find((m) => m.id === metalId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -90,9 +105,22 @@ export const AddPurchaseDialog = ({ vepariId, vepari, onAdd }: AddPurchaseDialog
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <ShoppingBag className="h-5 w-5 text-primary" />
             Add New Purchase
+            {selectedMetal && (
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium bg-${selectedMetal.color}-500/10 text-${selectedMetal.color}-500`}>
+                {selectedMetal.name}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Metal Selector */}
+          <MetalSelector
+            metals={metals}
+            value={metalId}
+            onChange={setMetalId}
+            label="Metal *"
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Date *</Label>
