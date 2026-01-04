@@ -2,6 +2,7 @@ import { useVepariData } from '@/hooks/useVepariData';
 import { VepariCard } from '@/components/VepariCard';
 import { AddVepariDialog } from '@/components/AddVepariDialog';
 import { TotalSummaryCard } from '@/components/TotalSummaryCard';
+import { MetalManagement } from '@/components/MetalManagement';
 import { useNavigate, Link } from 'react-router-dom';
 import { Scale, Users, Database, AlertTriangle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,17 +12,20 @@ const Index = () => {
   const { 
     addVepari, 
     getVepariSummaries, 
-    getTotalRemaining, 
-    getTotalRemainingStoneCharges,
+    getMetalTotalSummaries,
     getOverdueCount,
     getUpcomingDueItems,
+    getMetals,
+    addMetal,
+    deleteMetal,
+    canDeleteMetal,
   } = useVepariData();
 
   const summaries = getVepariSummaries();
-  const totalRemaining = getTotalRemaining();
-  const totalRemainingStoneCharges = getTotalRemainingStoneCharges();
+  const metalSummaries = getMetalTotalSummaries();
   const overdueCount = getOverdueCount();
   const upcomingCount = getUpcomingDueItems(3).length;
+  const metals = getMetals();
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +39,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">
-                  Gold Tracker
+                  Metal Tracker
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Manage your vepari payments
@@ -58,6 +62,12 @@ const Index = () => {
                   )}
                 </Button>
               </Link>
+              <MetalManagement 
+                metals={metals}
+                onAdd={addMetal}
+                onDelete={deleteMetal}
+                canDelete={canDeleteMetal}
+              />
               <Link to="/backup">
                 <Button variant="outline" size="icon" className="rounded-full border-primary/30 hover:bg-primary/10" title="Backup & Restore">
                   <Database className="h-4 w-4 text-primary" />
@@ -109,12 +119,11 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Summary Card */}
+        {/* Summary Cards */}
         <div className="mb-8 animate-fade-in">
           <TotalSummaryCard
-            totalRemaining={totalRemaining}
-            totalRemainingStoneCharges={totalRemainingStoneCharges}
-            vepariCount={summaries.length}
+            metalSummaries={metalSummaries}
+            totalVepariCount={summaries.length}
           />
         </div>
 
@@ -135,7 +144,7 @@ const Index = () => {
               No veparis yet
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Add your first vepari to start tracking gold payments
+              Add your first vepari to start tracking metal payments
             </p>
           </div>
         ) : (
@@ -148,6 +157,7 @@ const Index = () => {
               >
                 <VepariCard
                   vepari={vepari}
+                  metals={metals}
                   onClick={() => navigate(`/vepari/${vepari.id}`)}
                 />
               </div>

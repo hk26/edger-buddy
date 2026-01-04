@@ -9,7 +9,13 @@ const STORAGE_KEYS = {
   veparis: 'gold-tracker-veparis',
   purchases: 'gold-tracker-purchases',
   payments: 'gold-tracker-payments',
+  metals: 'gold-tracker-metals',
 };
+
+const DEFAULT_METALS = [
+  { id: 'gold', name: 'Gold', symbol: 'Au', color: 'amber', displayOrder: 1, createdAt: new Date().toISOString(), isDefault: true },
+  { id: 'silver', name: 'Silver', symbol: 'Ag', color: 'slate', displayOrder: 2, createdAt: new Date().toISOString(), isDefault: true },
+];
 
 const Backup = () => {
   const navigate = useNavigate();
@@ -22,15 +28,16 @@ const Backup = () => {
         veparis: JSON.parse(localStorage.getItem(STORAGE_KEYS.veparis) || '[]'),
         purchases: JSON.parse(localStorage.getItem(STORAGE_KEYS.purchases) || '[]'),
         payments: JSON.parse(localStorage.getItem(STORAGE_KEYS.payments) || '[]'),
+        metals: JSON.parse(localStorage.getItem(STORAGE_KEYS.metals) || JSON.stringify(DEFAULT_METALS)),
         exportedAt: new Date().toISOString(),
-        version: '1.0',
+        version: '2.0', // Updated version for multi-metal support
       };
 
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `gold-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `metal-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -61,8 +68,23 @@ const Backup = () => {
         // Confirm before overwriting
         if (window.confirm('This will replace all existing data. Are you sure you want to continue?')) {
           localStorage.setItem(STORAGE_KEYS.veparis, JSON.stringify(data.veparis));
-          localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(data.purchases));
-          localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(data.payments));
+          
+          // Migrate purchases if they don't have metalId
+          const migratedPurchases = data.purchases.map((p: any) => ({
+            ...p,
+            metalId: p.metalId || 'gold',
+          }));
+          localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(migratedPurchases));
+          
+          // Migrate payments if they don't have metalId
+          const migratedPayments = data.payments.map((p: any) => ({
+            ...p,
+            metalId: p.metalId || 'gold',
+          }));
+          localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(migratedPayments));
+          
+          // Import metals or use defaults
+          localStorage.setItem(STORAGE_KEYS.metals, JSON.stringify(data.metals || DEFAULT_METALS));
 
           toast.success('Backup imported successfully! Redirecting...');
           
@@ -87,11 +109,13 @@ const Backup = () => {
     const veparis = JSON.parse(localStorage.getItem(STORAGE_KEYS.veparis) || '[]');
     const purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.purchases) || '[]');
     const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.payments) || '[]');
+    const metals = JSON.parse(localStorage.getItem(STORAGE_KEYS.metals) || JSON.stringify(DEFAULT_METALS));
 
     return {
       veparis: veparis.length,
       purchases: purchases.length,
       payments: payments.length,
+      metals: metals.length,
     };
   };
 
@@ -137,7 +161,7 @@ const Backup = () => {
             <CardDescription>Your stored data overview</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-4 text-center">
               <div className="rounded-lg bg-background/50 p-4">
                 <p className="text-2xl font-bold gold-text">{stats.veparis}</p>
                 <p className="text-sm text-muted-foreground">Veparis</p>
@@ -149,6 +173,10 @@ const Backup = () => {
               <div className="rounded-lg bg-background/50 p-4">
                 <p className="text-2xl font-bold gold-text">{stats.payments}</p>
                 <p className="text-sm text-muted-foreground">Payments</p>
+              </div>
+              <div className="rounded-lg bg-background/50 p-4">
+                <p className="text-2xl font-bold gold-text">{stats.metals}</p>
+                <p className="text-sm text-muted-foreground">Metals</p>
               </div>
             </div>
           </CardContent>
@@ -176,6 +204,7 @@ const Backup = () => {
                     <li>All purchase transactions</li>
                     <li>All payment records</li>
                     <li>Stone charges data</li>
+                    <li>Custom metals</li>
                   </ul>
                 </div>
               </div>
