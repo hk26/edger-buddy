@@ -160,6 +160,12 @@ export const useVepariData = () => {
     return newVepari;
   };
 
+  const updateVepari = (id: string, updates: Partial<Omit<Vepari, 'id' | 'createdAt'>>) => {
+    setVeparis((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
+    );
+  };
+
   const deleteVepari = (id: string) => {
     const newVeparis = veparis.filter((v) => v.id !== id);
     const newPurchases = purchases.filter((p) => p.vepariId !== id);
@@ -187,6 +193,22 @@ export const useVepariData = () => {
     return newPurchase;
   };
 
+  const updatePurchase = (id: string, updates: Partial<Omit<Purchase, 'id' | 'vepariId'>>) => {
+    setPurchases((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...updates };
+        // Recalculate due date if credit days or date changed
+        if (updates.creditDays !== undefined || updates.date !== undefined) {
+          updated.dueDate = updated.creditDays 
+            ? addDays(parseISO(updated.date), updated.creditDays).toISOString().split('T')[0]
+            : undefined;
+        }
+        return updated;
+      })
+    );
+  };
+
   const deletePurchase = (id: string) => {
     setPurchases((prev) => prev.filter((p) => p.id !== id));
   };
@@ -199,6 +221,20 @@ export const useVepariData = () => {
     };
     setPayments((prev) => [...prev, newPayment]);
     return newPayment;
+  };
+
+  const updatePayment = (id: string, updates: Partial<Omit<Payment, 'id' | 'vepariId'>>) => {
+    setPayments((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...updates };
+        // Recalculate amount if weight or rate changed
+        if (updates.weightGrams !== undefined || updates.ratePerGram !== undefined) {
+          updated.amount = updated.weightGrams * updated.ratePerGram;
+        }
+        return updated;
+      })
+    );
   };
 
   const deletePayment = (id: string) => {
@@ -501,6 +537,7 @@ export const useVepariData = () => {
     canDeleteMetal,
     // Vepari operations
     addVepari,
+    updateVepari,
     deleteVepari,
     getVepariSummaries,
     getVepariById,
@@ -508,8 +545,10 @@ export const useVepariData = () => {
     getVepariPayments,
     // Purchase/Payment operations
     addPurchase,
+    updatePurchase,
     deletePurchase,
     addPayment,
+    updatePayment,
     deletePayment,
     // Calculations
     getTotalRemaining,
