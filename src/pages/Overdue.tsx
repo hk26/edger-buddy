@@ -101,7 +101,7 @@ const Overdue = () => {
                     Total Overdue
                   </p>
                   <p className="number-display text-2xl font-bold text-orange-500">
-                    {totalOverdueGrams.toFixed(2)}
+                    {totalOverdueGrams.toFixed(4)}
                     <span className="ml-1 text-sm text-muted-foreground">g</span>
                   </p>
                 </div>
@@ -188,7 +188,7 @@ const Overdue = () => {
                         </div>
                         <div className="text-right">
                           <p className={`number-display text-lg font-semibold ${colors.text}`}>
-                            {item.remainingGrams.toFixed(2)}g
+                            {item.remainingGrams.toFixed(4)}g
                           </p>
                           <p className="text-sm font-medium text-amber-500">
                             {item.daysUntilDue === 0
@@ -282,7 +282,7 @@ const Overdue = () => {
                                     </div>
                                     <div className="text-right">
                                       <p className={`number-display text-lg font-semibold ${colors.text}`}>
-                                        {item.remainingGrams.toFixed(2)}g
+                                        {item.remainingGrams.toFixed(4)}g
                                       </p>
                                       <p className="text-sm font-medium text-orange-500">
                                         {item.daysOverdue} days overdue

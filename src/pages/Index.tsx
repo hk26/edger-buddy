@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useVepariData } from '@/hooks/useVepariData';
 import { VepariCard } from '@/components/VepariCard';
 import { AddVepariDialog } from '@/components/AddVepariDialog';
 import { TotalSummaryCard } from '@/components/TotalSummaryCard';
 import { MetalManagement } from '@/components/MetalManagement';
 import { useNavigate, Link } from 'react-router-dom';
-import { Scale, Users, Database, AlertTriangle, Clock } from 'lucide-react';
+import { Scale, Users, Database, AlertTriangle, Clock, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { getMetalColorClasses } from '@/components/MetalSelector';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -21,11 +24,34 @@ const Index = () => {
     canDeleteMetal,
   } = useVepariData();
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMetalFilter, setSelectedMetalFilter] = useState<string>('all');
+
   const summaries = getVepariSummaries();
   const metalSummaries = getMetalTotalSummaries();
   const overdueCount = getOverdueCount();
   const upcomingCount = getUpcomingDueItems(3).length;
   const metals = getMetals();
+
+  // Filter summaries based on search and metal filter
+  const filteredSummaries = summaries.filter((vepari) => {
+    // Search filter - case insensitive partial match
+    const matchesSearch = searchQuery === '' || 
+      vepari.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Metal filter - check if vepari has transactions in selected metal
+    const matchesMetal = selectedMetalFilter === 'all' || 
+      vepari.metalSummaries.some((ms) => ms.metalId === selectedMetalFilter);
+    
+    return matchesSearch && matchesMetal;
+  });
+
+  const hasActiveFilters = searchQuery !== '' || selectedMetalFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedMetalFilter('all');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,6 +153,87 @@ const Index = () => {
           />
         </div>
 
+        {/* Search & Filter Bar */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by vepari name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 border-border/50 bg-card"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Metal Filter Chips */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedMetalFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedMetalFilter('all')}
+                className={selectedMetalFilter === 'all' ? '' : 'border-border/50'}
+              >
+                All
+              </Button>
+              {metals.map((metal) => {
+                const colors = getMetalColorClasses(metal.color);
+                const isSelected = selectedMetalFilter === metal.id;
+                return (
+                  <Button
+                    key={metal.id}
+                    variant={isSelected ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedMetalFilter(metal.id)}
+                    className={`gap-1.5 ${
+                      isSelected 
+                        ? `${colors.bg} ${colors.text} hover:opacity-90` 
+                        : `border-border/50 hover:${colors.bg}`
+                    }`}
+                  >
+                    <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                      isSelected ? 'bg-background/20' : colors.bg
+                    } ${colors.text}`}>
+                      {metal.symbol}
+                    </span>
+                    {metal.name}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredSummaries.length} of {summaries.length} vepari{summaries.length !== 1 ? 's' : ''}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="mr-1 h-3 w-3" />
+                Clear filters
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Vepari List */}
         <div className="mb-6 flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
@@ -147,9 +254,29 @@ const Index = () => {
               Add your first vepari to start tracking metal payments
             </p>
           </div>
+        ) : filteredSummaries.length === 0 ? (
+          <div className="animate-fade-in rounded-2xl border border-dashed border-border/50 bg-card/50 p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Search className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-display text-lg font-semibold text-foreground">
+              No results found
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Try adjusting your search or filter criteria
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="mt-4"
+            >
+              Clear filters
+            </Button>
+          </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {summaries.map((vepari, index) => (
+            {filteredSummaries.map((vepari, index) => (
               <div
                 key={vepari.id}
                 className="animate-fade-in"

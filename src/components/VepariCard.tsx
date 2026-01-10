@@ -54,19 +54,19 @@ export const VepariCard = ({ vepari, metals, onClick }: VepariCardProps) => {
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Purchased</p>
                       <p className="number-display text-sm font-medium text-foreground">
-                        {summary.totalPurchased.toFixed(2)}g
+                        {summary.totalPurchased.toFixed(4)}g
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Paid</p>
                       <p className="number-display text-sm font-medium text-success">
-                        {summary.totalPaid.toFixed(2)}g
+                        {summary.totalPaid.toFixed(4)}g
                       </p>
                     </div>
-                    <div className="text-right min-w-[70px]">
+                    <div className="text-right min-w-[80px]">
                       <p className="text-xs text-muted-foreground">Remaining</p>
                       <p className={`number-display text-sm font-semibold ${colors.text}`}>
-                        {summary.remainingWeight.toFixed(2)}g
+                        {summary.remainingWeight.toFixed(4)}g
                       </p>
                     </div>
                   </div>

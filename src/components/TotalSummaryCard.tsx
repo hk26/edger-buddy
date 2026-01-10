@@ -58,7 +58,7 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
                       </p>
                     </div>
                     <p className={`number-display mt-2 text-3xl font-bold ${colors.text}`}>
-                      {remaining.toFixed(2)}
+                      {remaining.toFixed(4)}
                       <span className="ml-2 text-lg text-muted-foreground">grams</span>
                     </p>
                   </div>
