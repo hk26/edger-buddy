@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import VepariDetail from "./pages/VepariDetail";
 import Backup from "./pages/Backup";
 import Overdue from "./pages/Overdue";
+import Customers from "./pages/Customers";
+import CustomerDetail from "./pages/CustomerDetail";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => {
             <Route path="/vepari/:id" element={<VepariDetail />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/overdue" element={<Overdue />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/customer/:id" element={<CustomerDetail />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

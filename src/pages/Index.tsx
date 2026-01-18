@@ -5,7 +5,7 @@ import { AddVepariDialog } from '@/components/AddVepariDialog';
 import { TotalSummaryCard } from '@/components/TotalSummaryCard';
 import { MetalManagement } from '@/components/MetalManagement';
 import { useNavigate, Link } from 'react-router-dom';
-import { Scale, Users, Database, AlertTriangle, Clock, Search, X } from 'lucide-react';
+import { Scale, Users, Database, AlertTriangle, Clock, Search, X, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getMetalColorClasses } from '@/components/MetalSelector';
@@ -86,6 +86,16 @@ const Index = () => {
                       {overdueCount > 9 ? '9+' : overdueCount}
                     </span>
                   )}
+                </Button>
+              </Link>
+              <Link to="/customers">
+                <Button variant="outline" size="icon" className="rounded-full border-emerald-500/30 hover:bg-emerald-500/10" title="Customer Ledger">
+                  <Users className="h-4 w-4 text-emerald-500" />
+                </Button>
+              </Link>
+              <Link to="/reports">
+                <Button variant="outline" size="icon" className="rounded-full border-purple-500/30 hover:bg-purple-500/10" title="Reports">
+                  <BarChart3 className="h-4 w-4 text-purple-500" />
                 </Button>
               </Link>
               <MetalManagement 
