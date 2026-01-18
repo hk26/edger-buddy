@@ -92,3 +92,91 @@ export interface UpcomingDueItem {
 }
 
 export type PurchaseStatus = 'paid' | 'overdue' | 'upcoming' | 'normal' | 'no-credit';
+
+// ============= Customer Ledger Types =============
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  createdAt: string;
+}
+
+export interface CustomerPurchase {
+  id: string;
+  customerId: string;
+  metalId: string;
+  date: string;
+  itemDescription?: string;
+  weightGrams: number;
+  purchaseRatePerGram: number;   // Your buying rate (cost)
+  saleRatePerGram: number;       // Your selling rate to customer
+  makingCharges?: number;
+  stoneCharges?: number;
+  notes?: string;
+  deliveredGrams: number;        // Track partial delivery
+}
+
+export interface CustomerPayment {
+  id: string;
+  customerId: string;
+  purchaseId?: string;
+  date: string;
+  amount: number;
+  paymentMode?: string;
+  notes?: string;
+}
+
+export interface DeliveryRecord {
+  id: string;
+  customerId: string;
+  purchaseId: string;
+  date: string;
+  weightGrams: number;
+  notes?: string;
+}
+
+export interface CustomerMetalSummary {
+  metalId: string;
+  metalName: string;
+  metalSymbol: string;
+  metalColor: string;
+  totalGrams: number;
+  deliveredGrams: number;
+  pendingGrams: number;
+  totalSaleValue: number;
+  totalCostValue: number;
+  totalMakingCharges: number;
+  totalStoneCharges: number;
+  totalPaid: number;
+  pendingAmount: number;
+  grossProfit: number;
+}
+
+export interface CustomerSummary extends Customer {
+  metalSummaries: CustomerMetalSummary[];
+  totalPurchaseValue: number;
+  totalCostValue: number;
+  totalPaid: number;
+  totalPending: number;
+  totalGramsPurchased: number;
+  totalGramsDelivered: number;
+  totalGramsPending: number;
+  totalGrossProfit: number;
+}
+
+export interface ProfitReport {
+  metalId: string;
+  metalName: string;
+  metalSymbol: string;
+  metalColor: string;
+  totalPurchasedGrams: number;
+  avgBuyRate: number;
+  totalSoldGrams: number;
+  avgSellRate: number;
+  totalCost: number;
+  totalRevenue: number;
+  totalMakingCharges: number;
+  grossProfit: number;
+  profitMarginPercent: number;
+}
