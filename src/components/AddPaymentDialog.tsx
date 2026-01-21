@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Wallet } from 'lucide-react';
-import { Payment, Metal } from '@/types';
+import { Wallet, Banknote, Scale } from 'lucide-react';
+import { Payment, Metal, PaymentType } from '@/types';
 import { MetalSelector } from './MetalSelector';
 
 interface AddPaymentDialogProps {
@@ -21,13 +21,26 @@ interface AddPaymentDialogProps {
   onAdd: (payment: Omit<Payment, 'id'>) => void;
 }
 
+const paymentTypes: { value: PaymentType; label: string; icon: React.ReactNode; description: string }[] = [
+  { value: 'metal', label: 'Metal', icon: <Scale className="h-4 w-4" />, description: 'Pay in gold/silver' },
+  { value: 'cash', label: 'Cash', icon: <Banknote className="h-4 w-4" />, description: 'Pay in ₹' },
+];
+
 export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: AddPaymentDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [paymentType, setPaymentType] = useState<PaymentType>('metal');
   const [metalId, setMetalId] = useState(defaultMetalId || metals[0]?.id || 'gold');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Metal payment fields
   const [weightGrams, setWeightGrams] = useState('');
   const [ratePerGram, setRatePerGram] = useState('');
   const [stoneChargesPaid, setStoneChargesPaid] = useState('');
+  
+  // Cash payment fields
+  const [cashAmount, setCashAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('');
+  
   const [notes, setNotes] = useState('');
 
   // Update metalId when defaultMetalId changes
@@ -41,33 +54,50 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
     ? parseFloat(weightGrams) * parseFloat(ratePerGram)
     : 0;
 
-  const totalAmount = goldAmount + (stoneChargesPaid ? parseFloat(stoneChargesPaid) : 0);
+  const totalMetalAmount = goldAmount + (stoneChargesPaid ? parseFloat(stoneChargesPaid) : 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (weightGrams && ratePerGram && metalId) {
+    
+    if (paymentType === 'metal') {
+      if (!weightGrams || !ratePerGram || !metalId) return;
       onAdd({
         vepariId,
         metalId,
         date,
+        paymentType: 'metal',
         weightGrams: parseFloat(weightGrams),
         ratePerGram: parseFloat(ratePerGram),
         amount: goldAmount,
         stoneChargesPaid: stoneChargesPaid ? parseFloat(stoneChargesPaid) : undefined,
         notes: notes.trim() || undefined,
       });
-      resetForm();
-      setOpen(false);
+    } else {
+      if (!cashAmount) return;
+      onAdd({
+        vepariId,
+        metalId,
+        date,
+        paymentType: 'cash',
+        cashAmount: parseFloat(cashAmount),
+        paymentMode: paymentMode.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
     }
+    
+    resetForm();
+    setOpen(false);
   };
 
   const resetForm = () => {
+    setPaymentType('metal');
     setDate(new Date().toISOString().split('T')[0]);
     setWeightGrams('');
     setRatePerGram('');
     setStoneChargesPaid('');
+    setCashAmount('');
+    setPaymentMode('');
     setNotes('');
-    // Keep metalId as is
   };
 
   const selectedMetal = metals.find((m) => m.id === metalId);
@@ -93,6 +123,29 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Payment Type Selector */}
+          <div className="space-y-2">
+            <Label>Payment Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {paymentTypes.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setPaymentType(type.value)}
+                  className={`flex flex-col items-center gap-1 rounded-lg border p-3 transition-all ${
+                    paymentType === type.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border/50 bg-secondary hover:border-primary/30'
+                  }`}
+                >
+                  {type.icon}
+                  <span className="text-sm font-medium">{type.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{type.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Metal Selector */}
           <MetalSelector
             metals={metals}
@@ -112,71 +165,119 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight Paid (grams) *</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.01"
-                value={weightGrams}
-                onChange={(e) => setWeightGrams(e.target.value)}
-                placeholder="20.00"
-                className="border-border/50 bg-secondary"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rate">Rate per Gram *</Label>
-              <Input
-                id="rate"
-                type="number"
-                step="0.01"
-                value={ratePerGram}
-                onChange={(e) => setRatePerGram(e.target.value)}
-                placeholder="7500.00"
-                className="border-border/50 bg-secondary"
-                required
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="stoneChargesPaid">Stone Charges Paid ₹ (Optional)</Label>
-            <Input
-              id="stoneChargesPaid"
-              type="number"
-              step="0.01"
-              min="0"
-              value={stoneChargesPaid}
-              onChange={(e) => setStoneChargesPaid(e.target.value)}
-              placeholder="Stone charges being paid"
-              className="border-border/50 bg-secondary"
-            />
-          </div>
-          <div className="rounded-lg bg-primary/10 p-4 space-y-2">
-            <div>
-              <p className="text-sm text-muted-foreground">{selectedMetal?.name || 'Metal'} Amount</p>
-              <p className="number-display text-xl font-bold text-primary">
-                ₹{goldAmount.toLocaleString('en-IN')}
-              </p>
-            </div>
-            {stoneChargesPaid && parseFloat(stoneChargesPaid) > 0 && (
-              <>
+
+          {/* Metal Payment Form */}
+          {paymentType === 'metal' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight Paid (grams) *</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.01"
+                    value={weightGrams}
+                    onChange={(e) => setWeightGrams(e.target.value)}
+                    placeholder="20.00"
+                    className="border-border/50 bg-secondary"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Rate per Gram *</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={ratePerGram}
+                    onChange={(e) => setRatePerGram(e.target.value)}
+                    placeholder="7500.00"
+                    className="border-border/50 bg-secondary"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stoneChargesPaid">Stone Charges Paid ₹ (Optional)</Label>
+                <Input
+                  id="stoneChargesPaid"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={stoneChargesPaid}
+                  onChange={(e) => setStoneChargesPaid(e.target.value)}
+                  placeholder="Stone charges being paid"
+                  className="border-border/50 bg-secondary"
+                />
+              </div>
+              <div className="rounded-lg bg-primary/10 p-4 space-y-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">+ Stone Charges</p>
-                  <p className="number-display text-lg font-semibold text-amber-500">
-                    ₹{parseFloat(stoneChargesPaid).toLocaleString('en-IN')}
+                  <p className="text-sm text-muted-foreground">{selectedMetal?.name || 'Metal'} Amount</p>
+                  <p className="number-display text-xl font-bold text-primary">
+                    ₹{goldAmount.toLocaleString('en-IN')}
                   </p>
                 </div>
-                <div className="border-t border-border/50 pt-2">
-                  <p className="text-sm text-muted-foreground">Total Payment</p>
-                  <p className="number-display text-2xl font-bold text-primary">
-                    ₹{totalAmount.toLocaleString('en-IN')}
+                {stoneChargesPaid && parseFloat(stoneChargesPaid) > 0 && (
+                  <>
+                    <div>
+                      <p className="text-sm text-muted-foreground">+ Stone Charges</p>
+                      <p className="number-display text-lg font-semibold text-amber-500">
+                        ₹{parseFloat(stoneChargesPaid).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <div className="border-t border-border/50 pt-2">
+                      <p className="text-sm text-muted-foreground">Total Payment</p>
+                      <p className="number-display text-2xl font-bold text-primary">
+                        ₹{totalMetalAmount.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Cash Payment Form */}
+          {paymentType === 'cash' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="cashAmount">Amount ₹ *</Label>
+                <Input
+                  id="cashAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  placeholder="50000"
+                  className="border-border/50 bg-secondary text-lg font-semibold"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentMode">Payment Mode (Optional)</Label>
+                <Input
+                  id="paymentMode"
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  placeholder="e.g., Cash, UPI, Bank Transfer"
+                  className="border-border/50 bg-secondary"
+                />
+              </div>
+              {cashAmount && (
+                <div className="rounded-lg bg-blue-500/10 p-4">
+                  <p className="text-sm text-muted-foreground">Cash Payment</p>
+                  <p className="number-display text-2xl font-bold text-blue-500">
+                    ₹{parseFloat(cashAmount).toLocaleString('en-IN')}
                   </p>
+                  {paymentMode && (
+                    <p className="mt-1 text-sm text-muted-foreground">via {paymentMode}</p>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (Optional)</Label>
             <Textarea
