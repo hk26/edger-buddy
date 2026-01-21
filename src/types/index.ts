@@ -17,30 +17,61 @@ export interface Vepari {
   defaultPenaltyPercentPerDay?: number;
 }
 
+export type PurchaseType = 'regular' | 'cash' | 'bullion';
+
 export interface Purchase {
   id: string;
   vepariId: string;
   metalId: string;
   date: string;
+  purchaseType: PurchaseType;
+  
+  // Common fields
   itemDescription?: string;
-  weightGrams: number;
+  notes?: string;
+  
+  // Regular purchase fields (metal-based tracking)
+  weightGrams?: number;
   ratePerGram?: number;
   stoneCharges?: number;
-  notes?: string;
   creditDays?: number;
   penaltyPercentPerDay?: number;
   dueDate?: string;
+  
+  // Cash purchase fields
+  totalAmount?: number;              // Fixed total amount for cash purchases
+  labourCharges?: number;
+  
+  // Bullion purchase fields (all-in-one form)
+  oldGoldWeight?: number;            // Weight of old gold given (e.g., 147g)
+  oldGoldTouch?: number;             // Touch/purity % (e.g., 87)
+  fineGoldCalculated?: number;       // Calculated: oldGoldWeight × oldGoldTouch/100
+  freshMetalReceived?: number;       // Fresh bars received (e.g., 130g)
+  balanceGrams?: number;             // Remaining balance (+ve = owe them, -ve = credit)
+  balanceConvertedToMoney?: boolean; // If balance was settled in cash
+  balanceRate?: number;              // Rate used for cash conversion
+  balanceCashAmount?: number;        // Total cash for balance settlement
 }
+
+export type PaymentType = 'metal' | 'cash';
 
 export interface Payment {
   id: string;
   vepariId: string;
   metalId: string;
   date: string;
-  weightGrams: number;
-  ratePerGram: number;
-  amount: number;
+  paymentType: PaymentType;
+  
+  // Metal payment fields
+  weightGrams?: number;
+  ratePerGram?: number;
+  amount?: number;
   stoneChargesPaid?: number;
+  
+  // Cash payment fields
+  cashAmount?: number;               // Direct cash payment amount
+  paymentMode?: string;              // Cash, UPI, Bank Transfer
+  
   notes?: string;
 }
 
@@ -56,6 +87,17 @@ export interface MetalSummary {
   totalStoneChargesPaid: number;
   remainingStoneCharges: number;
   overdueCount: number;
+  
+  // Cash tracking
+  totalCashPurchased: number;
+  totalCashPaid: number;
+  remainingCash: number;
+  
+  // Bullion tracking
+  totalFineGoldGiven: number;
+  totalFreshMetalReceived: number;
+  bullionBalanceGrams: number;
+  bullionBalanceCash: number;
 }
 
 export interface VepariSummary extends Vepari {

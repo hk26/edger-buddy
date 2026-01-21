@@ -29,30 +29,36 @@ export const useVepariData = () => {
 
     if (storedVeparis) setVeparis(JSON.parse(storedVeparis));
     
-    // Migrate purchases - assign 'gold' metalId if missing
+    // Migrate purchases - assign 'gold' metalId if missing, add purchaseType
     if (storedPurchases) {
       const parsedPurchases = JSON.parse(storedPurchases);
       const migratedPurchases = parsedPurchases.map((p: any) => ({
         ...p,
         metalId: p.metalId || 'gold',
+        purchaseType: p.purchaseType || 'regular',
       }));
       setPurchases(migratedPurchases);
       // Save migrated data back
-      if (parsedPurchases.some((p: any) => !p.metalId)) {
+      if (parsedPurchases.some((p: any) => !p.metalId || !p.purchaseType)) {
         localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(migratedPurchases));
       }
     }
     
-    // Migrate payments - assign 'gold' metalId if missing
+    // Migrate payments - assign 'gold' metalId if missing, add paymentType
     if (storedPayments) {
       const parsedPayments = JSON.parse(storedPayments);
       const migratedPayments = parsedPayments.map((p: any) => ({
         ...p,
         metalId: p.metalId || 'gold',
+        paymentType: p.paymentType || 'metal',
+        // Migrate old weightGrams/ratePerGram to new optional fields
+        weightGrams: p.weightGrams,
+        ratePerGram: p.ratePerGram,
+        amount: p.amount,
       }));
       setPayments(migratedPayments);
       // Save migrated data back
-      if (parsedPayments.some((p: any) => !p.metalId)) {
+      if (parsedPayments.some((p: any) => !p.metalId || !p.paymentType)) {
         localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(migratedPayments));
       }
     }
@@ -242,22 +248,27 @@ export const useVepariData = () => {
   };
 
   // Calculate remaining grams for each purchase using FIFO (filtered by metal)
+  // Only considers regular purchases (not cash or bullion)
   const getPurchaseRemainingGrams = (vepariId: string, metalId?: string): Map<string, number> => {
     const vepariPurchases = purchases
       .filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId))
+      .filter((p) => p.purchaseType === 'regular' || !p.purchaseType) // Only regular purchases
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    const vepariPayments = payments.filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId));
-    let totalPaid = vepariPayments.reduce((sum, p) => sum + p.weightGrams, 0);
+    const vepariPayments = payments
+      .filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId))
+      .filter((p) => p.paymentType === 'metal' || !p.paymentType); // Only metal payments
+    let totalPaid = vepariPayments.reduce((sum, p) => sum + (p.weightGrams || 0), 0);
     
     const remainingMap = new Map<string, number>();
     
     for (const purchase of vepariPurchases) {
-      if (totalPaid >= purchase.weightGrams) {
+      const purchaseWeight = purchase.weightGrams || 0;
+      if (totalPaid >= purchaseWeight) {
         remainingMap.set(purchase.id, 0);
-        totalPaid -= purchase.weightGrams;
+        totalPaid -= purchaseWeight;
       } else {
-        remainingMap.set(purchase.id, purchase.weightGrams - totalPaid);
+        remainingMap.set(purchase.id, purchaseWeight - totalPaid);
         totalPaid = 0;
       }
     }
@@ -390,20 +401,47 @@ export const useVepariData = () => {
         const metalPurchases = vepariPurchases.filter((p) => p.metalId === metalId);
         const metalPayments = vepariPayments.filter((p) => p.metalId === metalId);
 
-        const purchased = metalPurchases.reduce((sum, p) => sum + p.weightGrams, 0);
-        const paid = metalPayments.reduce((sum, p) => sum + p.weightGrams, 0);
+        // Regular purchases (metal-based)
+        const regularPurchases = metalPurchases.filter(p => p.purchaseType === 'regular' || !p.purchaseType);
+        const purchased = regularPurchases.reduce((sum, p) => sum + (p.weightGrams || 0), 0);
+        
+        // Metal payments
+        const metalTypePayments = metalPayments.filter(p => p.paymentType === 'metal' || !p.paymentType);
+        const paid = metalTypePayments.reduce((sum, p) => sum + (p.weightGrams || 0), 0);
         const remaining = purchased - paid;
 
         const stoneCharges = metalPurchases.reduce((sum, p) => sum + (p.stoneCharges || 0), 0);
-        const stoneChargesPaid = metalPayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
+        const stoneChargesPaid = metalTypePayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
         const remainingStone = stoneCharges - stoneChargesPaid;
+
+        // Cash purchases and payments
+        const cashPurchases = metalPurchases.filter(p => p.purchaseType === 'cash');
+        const totalCashPurchased = cashPurchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+        
+        const cashTypePayments = metalPayments.filter(p => p.paymentType === 'cash');
+        const totalCashPaid = cashTypePayments.reduce((sum, p) => sum + (p.cashAmount || 0), 0);
+        const remainingCash = totalCashPurchased - totalCashPaid;
+
+        // Bullion purchases
+        const bullionPurchases = metalPurchases.filter(p => p.purchaseType === 'bullion');
+        const totalFineGoldGiven = bullionPurchases.reduce((sum, p) => sum + (p.fineGoldCalculated || 0), 0);
+        const totalFreshMetalReceived = bullionPurchases.reduce((sum, p) => sum + (p.freshMetalReceived || 0), 0);
+        
+        // Bullion balance: positive = you owe them, negative = they owe you
+        const bullionBalanceGrams = bullionPurchases
+          .filter(p => !p.balanceConvertedToMoney)
+          .reduce((sum, p) => sum + (p.balanceGrams || 0), 0);
+        
+        const bullionBalanceCash = bullionPurchases
+          .filter(p => p.balanceConvertedToMoney)
+          .reduce((sum, p) => sum + (p.balanceCashAmount || 0), 0);
 
         // Count overdue items for this metal
         const remainingMap = getPurchaseRemainingGrams(vepari.id, metalId);
         const today = startOfDay(new Date());
         let overdueCount = 0;
         
-        for (const purchase of metalPurchases) {
+        for (const purchase of regularPurchases) {
           const remainingGrams = remainingMap.get(purchase.id) || 0;
           if (remainingGrams > 0 && purchase.dueDate) {
             const dueDate = startOfDay(parseISO(purchase.dueDate));
@@ -425,6 +463,15 @@ export const useVepariData = () => {
           totalStoneChargesPaid: stoneChargesPaid,
           remainingStoneCharges: remainingStone,
           overdueCount,
+          // Cash tracking
+          totalCashPurchased,
+          totalCashPaid,
+          remainingCash,
+          // Bullion tracking
+          totalFineGoldGiven,
+          totalFreshMetalReceived,
+          bullionBalanceGrams,
+          bullionBalanceCash,
         });
 
         totalRemainingWeight += remaining;
