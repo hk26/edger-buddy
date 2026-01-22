@@ -1,15 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVepariData } from '@/hooks/useVepariData';
 import { AddPurchaseDialog } from '@/components/AddPurchaseDialog';
 import { AddPaymentDialog } from '@/components/AddPaymentDialog';
 import { EditVepariDialog } from '@/components/EditVepariDialog';
-import { EditPurchaseDialog } from '@/components/EditPurchaseDialog';
-import { EditPaymentDialog } from '@/components/EditPaymentDialog';
+import { TransactionCard } from '@/components/TransactionCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
   Scale,
@@ -18,11 +16,9 @@ import {
   Trash2,
   Calendar,
   Gem,
-  AlertTriangle,
-  Clock,
-  CheckCircle,
+  Banknote,
+  Flame,
 } from 'lucide-react';
-import { format, parseISO, differenceInDays, startOfDay } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +30,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Purchase, Payment, Metal } from '@/types';
-import { MetalBadge, getMetalColorClasses } from '@/components/MetalSelector';
+import { Purchase, Payment, Metal, MetalSummary } from '@/types';
+import { getMetalColorClasses } from '@/components/MetalSelector';
 
 const VepariDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,7 +41,6 @@ const VepariDetail = () => {
     getVepariPurchases,
     getVepariPayments,
     getMetals,
-    getMetalById,
     addPurchase,
     addPayment,
     updateVepari,
@@ -66,24 +61,34 @@ const VepariDetail = () => {
   const allPurchases = getVepariPurchases(id!);
   const allPayments = getVepariPayments(id!);
   
-  // Get vepari summary for metal-specific data
-  const vepariSummary = getVepariSummaries().find(s => s.id === id);
-  const availableMetals = vepariSummary?.metalSummaries.map(ms => getMetalById(ms.metalId)).filter(Boolean) as Metal[] || [];
+  // Create metal lookup map for O(1) access
+  const metalMap = useMemo(() => new Map(metals.map(m => [m.id, m])), [metals]);
+  
+  // Get vepari summary - memoized
+  const vepariSummary = useMemo(() => 
+    getVepariSummaries().find(s => s.id === id),
+    [getVepariSummaries, id]
+  );
+  
+  const availableMetals = useMemo(() => 
+    vepariSummary?.metalSummaries
+      .map(ms => metalMap.get(ms.metalId))
+      .filter((m): m is Metal => Boolean(m)) || [],
+    [vepariSummary, metalMap]
+  );
+
+  // Memoized delete handler
+  const handleDeleteVepari = useCallback(() => {
+    deleteVepari(id!);
+    navigate('/');
+  }, [deleteVepari, id, navigate]);
 
   if (!vepari) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Vepari not found
-          </h1>
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="mt-4"
-          >
-            Go Back
-          </Button>
+          <h1 className="font-display text-2xl font-bold text-foreground">Vepari not found</h1>
+          <Button variant="outline" onClick={() => navigate('/')} className="mt-4">Go Back</Button>
         </div>
       </div>
     );
@@ -93,6 +98,7 @@ const VepariDetail = () => {
   const purchases = selectedMetalId === 'all' 
     ? allPurchases 
     : allPurchases.filter(p => p.metalId === selectedMetalId);
+  
   const payments = selectedMetalId === 'all'
     ? allPayments
     : allPayments.filter(p => p.metalId === selectedMetalId);
@@ -100,10 +106,11 @@ const VepariDetail = () => {
   const remainingMap = getPurchaseRemainingGrams(id!, selectedMetalId === 'all' ? undefined : selectedMetalId);
 
   // Get current metal summary
-  const currentMetalSummary = selectedMetalId === 'all' 
-    ? vepariSummary 
-    : vepariSummary?.metalSummaries.find(ms => ms.metalId === selectedMetalId);
+  const currentMetalSummary: MetalSummary | undefined = selectedMetalId !== 'all' 
+    ? vepariSummary?.metalSummaries.find(ms => ms.metalId === selectedMetalId)
+    : undefined;
 
+  // Regular metal tracking
   const totalPurchased = selectedMetalId === 'all' 
     ? vepariSummary?.totalPurchased || 0
     : currentMetalSummary?.totalPurchased || 0;
@@ -112,6 +119,7 @@ const VepariDetail = () => {
     : currentMetalSummary?.totalPaid || 0;
   const remaining = totalPurchased - totalPaid;
 
+  // Stone charges
   const totalStoneCharges = selectedMetalId === 'all'
     ? vepariSummary?.totalStoneCharges || 0
     : currentMetalSummary?.totalStoneCharges || 0;
@@ -120,66 +128,58 @@ const VepariDetail = () => {
     : currentMetalSummary?.totalStoneChargesPaid || 0;
   const remainingStoneCharges = totalStoneCharges - totalStoneChargesPaid;
 
-  const handleDeleteVepari = () => {
-    deleteVepari(id!);
-    navigate('/');
-  };
-
-  const getPurchaseStatusBadge = (purchase: Purchase) => {
-    const remainingGrams = remainingMap.get(purchase.id) || 0;
-    const status = getPurchaseStatus(purchase, remainingGrams);
-    
-    switch (status) {
-      case 'paid':
-        return (
-          <Badge variant="outline" className="border-success/50 bg-success/10 text-success">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Paid
-          </Badge>
-        );
-      case 'overdue':
-        const today = startOfDay(new Date());
-        const dueDate = startOfDay(parseISO(purchase.dueDate!));
-        const daysOverdue = differenceInDays(today, dueDate);
-        return (
-          <Badge variant="outline" className="border-orange-500/50 bg-orange-500/20 text-orange-500">
-            <AlertTriangle className="mr-1 h-3 w-3" />
-            {daysOverdue}d overdue
-          </Badge>
-        );
-      case 'upcoming':
-        const todayUp = startOfDay(new Date());
-        const dueDateUp = startOfDay(parseISO(purchase.dueDate!));
-        const daysUntil = differenceInDays(dueDateUp, todayUp);
-        return (
-          <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-500">
-            <Clock className="mr-1 h-3 w-3" />
-            {daysUntil === 0 ? 'Due today' : daysUntil === 1 ? 'Due tomorrow' : `${daysUntil}d left`}
-          </Badge>
-        );
-      case 'normal':
-        if (purchase.dueDate) {
-          return (
-            <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-              <Calendar className="mr-1 h-3 w-3" />
-              Due: {format(parseISO(purchase.dueDate), 'dd MMM')}
-            </Badge>
-          );
-        }
-        return null;
-      default:
-        return null;
+  // Cash tracking - aggregate from metal summaries
+  const cashStats = useMemo(() => {
+    const summaries = vepariSummary?.metalSummaries || [];
+    if (selectedMetalId === 'all') {
+      return summaries.reduce((acc, ms) => ({
+        purchased: acc.purchased + (ms.totalCashPurchased || 0),
+        paid: acc.paid + (ms.totalCashPaid || 0),
+        remaining: acc.remaining + (ms.remainingCash || 0),
+      }), { purchased: 0, paid: 0, remaining: 0 });
     }
-  };
+    const ms = summaries.find(s => s.metalId === selectedMetalId);
+    return {
+      purchased: ms?.totalCashPurchased || 0,
+      paid: ms?.totalCashPaid || 0,
+      remaining: ms?.remainingCash || 0,
+    };
+  }, [selectedMetalId, vepariSummary]);
+
+  // Bullion tracking - aggregate from metal summaries
+  const bullionStats = useMemo(() => {
+    const summaries = vepariSummary?.metalSummaries || [];
+    if (selectedMetalId === 'all') {
+      return summaries.reduce((acc, ms) => ({
+        fineGiven: acc.fineGiven + (ms.totalFineGoldGiven || 0),
+        freshReceived: acc.freshReceived + (ms.totalFreshMetalReceived || 0),
+        balanceGrams: acc.balanceGrams + (ms.bullionBalanceGrams || 0),
+        balanceCash: acc.balanceCash + (ms.bullionBalanceCash || 0),
+      }), { fineGiven: 0, freshReceived: 0, balanceGrams: 0, balanceCash: 0 });
+    }
+    const ms = summaries.find(s => s.metalId === selectedMetalId);
+    return {
+      fineGiven: ms?.totalFineGoldGiven || 0,
+      freshReceived: ms?.totalFreshMetalReceived || 0,
+      balanceGrams: ms?.bullionBalanceGrams || 0,
+      balanceCash: ms?.bullionBalanceCash || 0,
+    };
+  }, [selectedMetalId, vepariSummary]);
 
   // Combine and sort all transactions by date
-  const allTransactions = [
-    ...purchases.map((p) => ({ ...p, type: 'purchase' as const })),
-    ...payments.map((p) => ({ ...p, type: 'payment' as const })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const allTransactions = useMemo(() => 
+    [
+      ...purchases.map((p) => ({ ...p, type: 'purchase' as const })),
+      ...payments.map((p) => ({ ...p, type: 'payment' as const })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [purchases, payments]
+  );
 
-  const selectedMetal = selectedMetalId !== 'all' ? getMetalById(selectedMetalId) : null;
+  const selectedMetal = selectedMetalId !== 'all' ? metalMap.get(selectedMetalId) : null;
   const selectedColors = selectedMetal ? getMetalColorClasses(selectedMetal.color) : null;
+  
+  const hasCashTransactions = cashStats.purchased > 0;
+  const hasBullionTransactions = bullionStats.fineGiven > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,26 +188,12 @@ const VepariDetail = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/')}
-                className="hover:bg-primary/10"
-              >
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="hover:bg-primary/10">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="font-display text-2xl font-bold text-foreground">
-                  {vepari.name}
-                </h1>
-                {vepari.phone && (
-                  <p className="text-sm text-muted-foreground">{vepari.phone}</p>
-                )}
-                {vepari.defaultCreditDays && (
-                  <p className="text-xs text-muted-foreground">
-                    Default: {vepari.defaultCreditDays} days credit @ {vepari.defaultPenaltyPercentPerDay}%/day
-                  </p>
-                )}
+                <h1 className="font-display text-2xl font-bold text-foreground">{vepari.name}</h1>
+                {vepari.phone && <p className="text-sm text-muted-foreground">{vepari.phone}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -215,24 +201,19 @@ const VepariDetail = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" className="gap-2">
-                    <Trash2 className="h-4 w-4" />
-                    Delete
+                    <Trash2 className="h-4 w-4" />Delete
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="border-border/50 bg-card">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Vepari</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete {vepari.name} and all their
-                      transactions. This action cannot be undone.
+                      This will permanently delete {vepari.name} and all their transactions.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteVepari}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
+                    <AlertDialogAction onClick={handleDeleteVepari} className="bg-destructive text-destructive-foreground">
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -247,17 +228,11 @@ const VepariDetail = () => {
       <div className="container mx-auto px-4 pt-6">
         <Tabs value={selectedMetalId} onValueChange={setSelectedMetalId}>
           <TabsList className="w-full justify-start bg-card/50">
-            <TabsTrigger value="all" className="gap-2">
-              All Metals
-            </TabsTrigger>
+            <TabsTrigger value="all" className="gap-2">All Metals</TabsTrigger>
             {availableMetals.map((metal) => {
               const colors = getMetalColorClasses(metal.color);
               return (
-                <TabsTrigger 
-                  key={metal.id} 
-                  value={metal.id}
-                  className="gap-2"
-                >
+                <TabsTrigger key={metal.id} value={metal.id} className="gap-2">
                   <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${colors.bg} ${colors.text}`}>
                     {metal.symbol}
                   </span>
@@ -268,7 +243,8 @@ const VepariDetail = () => {
           </TabsList>
 
           {/* Summary Cards */}
-          <div className="py-6">
+          <div className="py-6 space-y-4">
+            {/* Regular Metal Summary */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="border-border/50 bg-card">
                 <CardContent className="p-5">
@@ -277,13 +253,8 @@ const VepariDetail = () => {
                       <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Total Purchased
-                      </p>
-                      <p className="number-display text-2xl font-bold text-foreground">
-                        {totalPurchased.toFixed(4)}
-                        <span className="ml-1 text-sm text-muted-foreground">g</span>
-                      </p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Purchased</p>
+                      <p className="number-display text-2xl font-bold text-foreground">{totalPurchased.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
@@ -296,22 +267,17 @@ const VepariDetail = () => {
                       <Wallet className="h-5 w-5 text-success" />
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Total Paid
-                      </p>
-                      <p className="number-display text-2xl font-bold text-success">
-                        {totalPaid.toFixed(4)}
-                        <span className="ml-1 text-sm text-muted-foreground">g</span>
-                      </p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Paid</p>
+                      <p className="number-display text-2xl font-bold text-success">{totalPaid.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className={`border-primary/30 bg-card card-glow ${selectedColors ? selectedColors.border : ''}`}>
+              <Card className={`border-primary/30 bg-card card-glow ${selectedColors?.border || ''}`}>
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${selectedColors ? selectedColors.bg : 'bg-primary/10'}`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${selectedColors?.bg || 'bg-primary/10'}`}>
                       {selectedMetal ? (
                         <span className={`text-sm font-bold ${selectedColors?.text}`}>{selectedMetal.symbol}</span>
                       ) : (
@@ -319,22 +285,109 @@ const VepariDetail = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Remaining
-                      </p>
-                      <p className={`number-display text-2xl font-bold ${selectedColors ? selectedColors.text : 'text-primary'}`}>
-                        {remaining.toFixed(4)}
-                        <span className="ml-1 text-sm text-muted-foreground">g</span>
-                      </p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Remaining</p>
+                      <p className={`number-display text-2xl font-bold ${selectedColors?.text || 'text-primary'}`}>{remaining.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Stone Charges Summary */}
+            {/* Cash Summary */}
+            {hasCashTransactions && (
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="border-blue-500/20 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                        <Banknote className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Bill Total</p>
+                        <p className="number-display text-lg font-bold text-foreground">₹{cashStats.purchased.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/50 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
+                        <Banknote className="h-4 w-4 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Paid</p>
+                        <p className="number-display text-lg font-bold text-success">₹{cashStats.paid.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-blue-500/30 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                        <Banknote className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Remaining</p>
+                        <p className="number-display text-lg font-bold text-blue-500">₹{cashStats.remaining.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Bullion Summary */}
+            {hasBullionTransactions && (
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="border-purple-500/20 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
+                        <Flame className="h-4 w-4 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Fine Gold Given</p>
+                        <p className="number-display text-lg font-bold text-foreground">{bullionStats.fineGiven.toFixed(4)}g</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/50 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
+                        <Flame className="h-4 w-4 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Fresh Metal Received</p>
+                        <p className="number-display text-lg font-bold text-success">{bullionStats.freshReceived.toFixed(4)}g</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-purple-500/30 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
+                        <Flame className="h-4 w-4 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Bullion Balance</p>
+                        <p className={`number-display text-lg font-bold ${bullionStats.balanceGrams > 0 ? 'text-orange-500' : 'text-success'}`}>
+                          {bullionStats.balanceGrams > 0 ? '+' : ''}{bullionStats.balanceGrams.toFixed(4)}g
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Stone Charges */}
             {totalStoneCharges > 0 && (
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card className="border-border/50 bg-card">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -342,17 +395,12 @@ const VepariDetail = () => {
                         <Gem className="h-4 w-4 text-amber-500" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                          Total Stone Charges
-                        </p>
-                        <p className="number-display text-lg font-bold text-foreground">
-                          ₹{totalStoneCharges.toLocaleString('en-IN')}
-                        </p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Stone Charges</p>
+                        <p className="number-display text-lg font-bold text-foreground">₹{totalStoneCharges.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card className="border-border/50 bg-card">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -360,17 +408,12 @@ const VepariDetail = () => {
                         <Gem className="h-4 w-4 text-success" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                          Stone Charges Paid
-                        </p>
-                        <p className="number-display text-lg font-bold text-success">
-                          ₹{totalStoneChargesPaid.toLocaleString('en-IN')}
-                        </p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Paid</p>
+                        <p className="number-display text-lg font-bold text-success">₹{totalStoneChargesPaid.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card className="border-amber-500/30 bg-card">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -378,12 +421,8 @@ const VepariDetail = () => {
                         <Gem className="h-4 w-4 text-amber-500" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                          Stone Charges Remaining
-                        </p>
-                        <p className="number-display text-lg font-bold text-amber-500">
-                          ₹{remainingStoneCharges.toLocaleString('en-IN')}
-                        </p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Remaining</p>
+                        <p className="number-display text-lg font-bold text-amber-500">₹{remainingStoneCharges.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -394,19 +433,8 @@ const VepariDetail = () => {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <AddPurchaseDialog 
-              vepariId={id!} 
-              vepari={vepari} 
-              metals={metals}
-              defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined}
-              onAdd={addPurchase} 
-            />
-            <AddPaymentDialog 
-              vepariId={id!} 
-              metals={metals}
-              defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined}
-              onAdd={addPayment} 
-            />
+            <AddPurchaseDialog vepariId={id!} vepari={vepari} metals={metals} defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined} onAdd={addPurchase} />
+            <AddPaymentDialog vepariId={id!} metals={metals} defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined} onAdd={addPayment} />
           </div>
 
           {/* Transaction History */}
@@ -415,159 +443,36 @@ const VepariDetail = () => {
               <Calendar className="h-5 w-5 text-primary" />
               <h2 className="font-display text-xl font-semibold text-foreground">
                 Transaction History
-                {selectedMetal && (
-                  <span className={`ml-2 text-sm font-normal ${selectedColors?.text}`}>
-                    ({selectedMetal.name})
-                  </span>
-                )}
+                {selectedMetal && <span className={`ml-2 text-sm font-normal ${selectedColors?.text}`}>({selectedMetal.name})</span>}
               </h2>
             </div>
 
             {allTransactions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/50 bg-card/50 p-12 text-center">
-                <p className="text-muted-foreground">
-                  No transactions yet{selectedMetal ? ` for ${selectedMetal.name}` : ''}. Add a purchase or payment to get started.
-                </p>
+                <p className="text-muted-foreground">No transactions yet. Add a purchase or payment to get started.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {allTransactions.map((transaction, index) => {
-                  const isPurchase = transaction.type === 'purchase';
-                  const purchase = isPurchase ? (transaction as Purchase) : null;
-                  const payment = !isPurchase ? (transaction as Payment) : null;
-                  const statusBadge = purchase ? getPurchaseStatusBadge(purchase) : null;
-                  const metal = getMetalById(transaction.metalId);
+                  const purchase = transaction.type === 'purchase' ? (transaction as Purchase) : null;
+                  const remainingGrams = purchase ? (remainingMap.get(purchase.id) || 0) : 0;
+                  const status = purchase ? getPurchaseStatus(purchase, remainingGrams) : 'no-credit';
                   
                   return (
-                    <Card
+                    <TransactionCard
                       key={transaction.id}
-                      className={`animate-fade-in border-border/50 bg-card ${
-                        isPurchase && purchase?.dueDate && getPurchaseStatus(purchase, remainingMap.get(purchase.id) || 0) === 'overdue'
-                          ? 'border-orange-500/30'
-                          : ''
-                      }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                transaction.type === 'purchase'
-                                  ? 'bg-muted'
-                                  : 'bg-success/10'
-                              }`}
-                            >
-                              {transaction.type === 'purchase' ? (
-                                <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                              ) : (
-                                <Wallet className="h-5 w-5 text-success" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                {metal && selectedMetalId === 'all' && (
-                                  <MetalBadge metal={metal} size="sm" />
-                                )}
-                                <p className="font-medium text-foreground">
-                                  {transaction.type === 'purchase'
-                                    ? (transaction as any).itemDescription || 'Purchase'
-                                    : 'Payment'}
-                                </p>
-                                {statusBadge}
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {format(new Date(transaction.date), 'dd MMM yyyy')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p
-                                className={`number-display text-lg font-semibold ${
-                                  transaction.type === 'purchase'
-                                    ? 'text-foreground'
-                                    : 'text-success'
-                                }`}
-                              >
-                                {transaction.type === 'purchase' ? '+' : '-'}
-                                {transaction.weightGrams.toFixed(4)}g
-                              </p>
-                              {transaction.type === 'payment' && (
-                                <p className="text-sm text-muted-foreground">
-                                  ₹{(transaction as any).amount.toLocaleString('en-IN')} @ ₹
-                                  {(transaction as any).ratePerGram}/g
-                                </p>
-                              )}
-                              {transaction.type === 'purchase' && (transaction as any).stoneCharges > 0 && (
-                                <p className="mt-1 flex items-center gap-1 text-sm text-amber-500">
-                                  <Gem className="h-3 w-3" />
-                                  Stone: ₹{(transaction as any).stoneCharges.toLocaleString('en-IN')}
-                                </p>
-                              )}
-                              {transaction.type === 'payment' && (transaction as any).stoneChargesPaid > 0 && (
-                                <p className="mt-1 flex items-center gap-1 text-sm text-amber-500">
-                                  <Gem className="h-3 w-3" />
-                                  Stone Paid: ₹{(transaction as any).stoneChargesPaid.toLocaleString('en-IN')}
-                                </p>
-                              )}
-                            </div>
-                            
-                            {/* Edit & Delete buttons */}
-                            <div className="flex items-center">
-                              {isPurchase && purchase ? (
-                                <EditPurchaseDialog
-                                  purchase={purchase}
-                                  metals={metals}
-                                  onUpdate={updatePurchase}
-                                />
-                              ) : payment ? (
-                                <EditPaymentDialog
-                                  payment={payment}
-                                  metals={metals}
-                                  onUpdate={updatePayment}
-                                />
-                              ) : null}
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="border-border/50 bg-card">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete {transaction.type === 'purchase' ? 'Purchase' : 'Payment'}
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete this {transaction.type}. This
-                                      action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() =>
-                                        transaction.type === 'purchase'
-                                          ? deletePurchase(transaction.id)
-                                          : deletePayment(transaction.id)
-                                      }
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      transaction={transaction}
+                      metal={metalMap.get(transaction.metalId)}
+                      metals={metals}
+                      remainingGrams={remainingGrams}
+                      showMetal={selectedMetalId === 'all'}
+                      status={status}
+                      onUpdatePurchase={updatePurchase}
+                      onUpdatePayment={updatePayment}
+                      onDeletePurchase={deletePurchase}
+                      onDeletePayment={deletePayment}
+                      animationDelay={index * 50}
+                    />
                   );
                 })}
               </div>
