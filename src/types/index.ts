@@ -105,6 +105,7 @@ export interface VepariSummary extends Vepari {
   totalRemainingWeight: number;
   totalRemainingStoneCharges: number;
   totalOverdueCount: number;
+  lastPaymentDate?: string; // ISO date string of most recent payment
   // Legacy fields for backward compatibility
   totalPurchased: number;
   totalPaid: number;

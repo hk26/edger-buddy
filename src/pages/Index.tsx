@@ -33,18 +33,26 @@ const Index = () => {
   const upcomingCount = getUpcomingDueItems(3).length;
   const metals = getMetals();
 
-  // Filter summaries based on search and metal filter
-  const filteredSummaries = summaries.filter((vepari) => {
-    // Search filter - case insensitive partial match
-    const matchesSearch = searchQuery === '' || 
-      vepari.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Metal filter - check if vepari has transactions in selected metal
-    const matchesMetal = selectedMetalFilter === 'all' || 
-      vepari.metalSummaries.some((ms) => ms.metalId === selectedMetalFilter);
-    
-    return matchesSearch && matchesMetal;
-  });
+  // Filter and sort summaries based on search, metal filter, and last payment date
+  const filteredSummaries = summaries
+    .filter((vepari) => {
+      // Search filter - case insensitive partial match
+      const matchesSearch = searchQuery === '' || 
+        vepari.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Metal filter - check if vepari has transactions in selected metal
+      const matchesMetal = selectedMetalFilter === 'all' || 
+        vepari.metalSummaries.some((ms) => ms.metalId === selectedMetalFilter);
+      
+      return matchesSearch && matchesMetal;
+    })
+    // Sort by last payment date (most recent first), veparis without payments go to end
+    .sort((a, b) => {
+      if (!a.lastPaymentDate && !b.lastPaymentDate) return 0;
+      if (!a.lastPaymentDate) return 1;
+      if (!b.lastPaymentDate) return -1;
+      return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
+    });
 
   const hasActiveFilters = searchQuery !== '' || selectedMetalFilter !== 'all';
 
