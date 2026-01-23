@@ -83,6 +83,31 @@ const VepariDetail = () => {
     navigate('/');
   }, [deleteVepari, id, navigate]);
 
+  // Wrapper for addPurchase that auto-creates a cash purchase when bullion balance is converted to money
+  const handleAddPurchase = useCallback((purchase: Omit<Purchase, 'id'>) => {
+    // First add the original purchase
+    addPurchase(purchase);
+    
+    // If it's a bullion purchase with cash balance, auto-create a linked cash purchase
+    if (
+      purchase.purchaseType === 'bullion' &&
+      purchase.balanceConvertedToMoney &&
+      purchase.balanceCashAmount &&
+      purchase.balanceCashAmount > 0
+    ) {
+      // Create a cash purchase for the balance amount
+      addPurchase({
+        vepariId: purchase.vepariId,
+        metalId: purchase.metalId,
+        date: purchase.date,
+        purchaseType: 'cash',
+        totalAmount: purchase.balanceCashAmount,
+        itemDescription: `Bullion balance settlement (${purchase.oldGoldWeight}g @ ${purchase.oldGoldTouch}% touch)`,
+        notes: `Auto-created from bullion transaction. Fine gold: ${purchase.fineGoldCalculated?.toFixed(4)}g, Fresh received: ${purchase.freshMetalReceived}g, Balance: ${purchase.balanceGrams?.toFixed(4)}g @ ₹${purchase.balanceRate}/g`,
+      });
+    }
+  }, [addPurchase]);
+
   // Filter purchases and payments by selected metal
   const purchases = useMemo(() => 
     selectedMetalId === 'all' 
@@ -457,7 +482,7 @@ const VepariDetail = () => {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <AddPurchaseDialog vepariId={id!} vepari={vepari} metals={metals} defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined} onAdd={addPurchase} />
+            <AddPurchaseDialog vepariId={id!} vepari={vepari} metals={metals} defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined} onAdd={handleAddPurchase} />
             <AddPaymentDialog vepariId={id!} metals={metals} defaultMetalId={selectedMetalId !== 'all' ? selectedMetalId : undefined} onAdd={addPayment} />
           </div>
 
