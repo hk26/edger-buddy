@@ -83,50 +83,50 @@ const VepariDetail = () => {
     navigate('/');
   }, [deleteVepari, id, navigate]);
 
-  if (!vepari) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">Vepari not found</h1>
-          <Button variant="outline" onClick={() => navigate('/')} className="mt-4">Go Back</Button>
-        </div>
-      </div>
-    );
-  }
-
   // Filter purchases and payments by selected metal
-  const purchases = selectedMetalId === 'all' 
-    ? allPurchases 
-    : allPurchases.filter(p => p.metalId === selectedMetalId);
+  const purchases = useMemo(() => 
+    selectedMetalId === 'all' 
+      ? allPurchases 
+      : allPurchases.filter(p => p.metalId === selectedMetalId),
+    [selectedMetalId, allPurchases]
+  );
   
-  const payments = selectedMetalId === 'all'
-    ? allPayments
-    : allPayments.filter(p => p.metalId === selectedMetalId);
-  
-  const remainingMap = getPurchaseRemainingGrams(id!, selectedMetalId === 'all' ? undefined : selectedMetalId);
+  const payments = useMemo(() => 
+    selectedMetalId === 'all'
+      ? allPayments
+      : allPayments.filter(p => p.metalId === selectedMetalId),
+    [selectedMetalId, allPayments]
+  );
 
   // Get current metal summary
-  const currentMetalSummary: MetalSummary | undefined = selectedMetalId !== 'all' 
-    ? vepariSummary?.metalSummaries.find(ms => ms.metalId === selectedMetalId)
-    : undefined;
+  const currentMetalSummary = useMemo((): MetalSummary | undefined => 
+    selectedMetalId !== 'all' 
+      ? vepariSummary?.metalSummaries.find(ms => ms.metalId === selectedMetalId)
+      : undefined,
+    [selectedMetalId, vepariSummary]
+  );
 
   // Regular metal tracking
-  const totalPurchased = selectedMetalId === 'all' 
-    ? vepariSummary?.totalPurchased || 0
-    : currentMetalSummary?.totalPurchased || 0;
-  const totalPaid = selectedMetalId === 'all'
-    ? vepariSummary?.totalPaid || 0
-    : currentMetalSummary?.totalPaid || 0;
-  const remaining = totalPurchased - totalPaid;
+  const { totalPurchased, totalPaid, remaining } = useMemo(() => {
+    const purchased = selectedMetalId === 'all' 
+      ? vepariSummary?.totalPurchased || 0
+      : currentMetalSummary?.totalPurchased || 0;
+    const paid = selectedMetalId === 'all'
+      ? vepariSummary?.totalPaid || 0
+      : currentMetalSummary?.totalPaid || 0;
+    return { totalPurchased: purchased, totalPaid: paid, remaining: purchased - paid };
+  }, [selectedMetalId, vepariSummary, currentMetalSummary]);
 
   // Stone charges
-  const totalStoneCharges = selectedMetalId === 'all'
-    ? vepariSummary?.totalStoneCharges || 0
-    : currentMetalSummary?.totalStoneCharges || 0;
-  const totalStoneChargesPaid = selectedMetalId === 'all'
-    ? vepariSummary?.totalStoneChargesPaid || 0
-    : currentMetalSummary?.totalStoneChargesPaid || 0;
-  const remainingStoneCharges = totalStoneCharges - totalStoneChargesPaid;
+  const { totalStoneCharges, totalStoneChargesPaid, remainingStoneCharges } = useMemo(() => {
+    const charges = selectedMetalId === 'all'
+      ? vepariSummary?.totalStoneCharges || 0
+      : currentMetalSummary?.totalStoneCharges || 0;
+    const chargesPaid = selectedMetalId === 'all'
+      ? vepariSummary?.totalStoneChargesPaid || 0
+      : currentMetalSummary?.totalStoneChargesPaid || 0;
+    return { totalStoneCharges: charges, totalStoneChargesPaid: chargesPaid, remainingStoneCharges: charges - chargesPaid };
+  }, [selectedMetalId, vepariSummary, currentMetalSummary]);
 
   // Cash tracking - aggregate from metal summaries
   const cashStats = useMemo(() => {
@@ -175,11 +175,35 @@ const VepariDetail = () => {
     [purchases, payments]
   );
 
-  const selectedMetal = selectedMetalId !== 'all' ? metalMap.get(selectedMetalId) : null;
-  const selectedColors = selectedMetal ? getMetalColorClasses(selectedMetal.color) : null;
+  const selectedMetal = useMemo(() => 
+    selectedMetalId !== 'all' ? metalMap.get(selectedMetalId) : null,
+    [selectedMetalId, metalMap]
+  );
+  const selectedColors = useMemo(() => 
+    selectedMetal ? getMetalColorClasses(selectedMetal.color) : null,
+    [selectedMetal]
+  );
   
   const hasCashTransactions = cashStats.purchased > 0;
   const hasBullionTransactions = bullionStats.fineGiven > 0;
+
+  // Memoize remainingMap  
+  const remainingMap = useMemo(() => 
+    getPurchaseRemainingGrams(id!, selectedMetalId === 'all' ? undefined : selectedMetalId),
+    [getPurchaseRemainingGrams, id, selectedMetalId]
+  );
+
+  // Early return AFTER all hooks
+  if (!vepari) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="font-display text-2xl font-bold text-foreground">Vepari not found</h1>
+          <Button variant="outline" onClick={() => navigate('/')} className="mt-4">Go Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
