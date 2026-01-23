@@ -184,8 +184,8 @@ const VepariDetail = () => {
     [selectedMetal]
   );
   
-  const hasCashTransactions = cashStats.purchased > 0;
-  const hasBullionTransactions = bullionStats.fineGiven > 0;
+  const hasCashTransactions = cashStats.purchased > 0 || cashStats.paid > 0;
+  const hasBullionTransactions = bullionStats.fineGiven > 0 || bullionStats.freshReceived > 0;
 
   // Memoize remainingMap  
   const remainingMap = useMemo(() => 
