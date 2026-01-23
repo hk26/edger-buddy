@@ -383,6 +383,13 @@ export const useVepariData = () => {
         ...vepariPayments.map((p) => p.metalId),
       ]);
 
+      // Find the most recent payment date
+      const lastPaymentDate = vepariPayments.length > 0
+        ? vepariPayments
+            .map(p => p.date)
+            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+        : undefined;
+
       const metalSummaries: MetalSummary[] = [];
       let totalRemainingWeight = 0;
       let totalRemainingStoneCharges = 0;
@@ -497,6 +504,7 @@ export const useVepariData = () => {
         totalRemainingWeight,
         totalRemainingStoneCharges,
         totalOverdueCount,
+        lastPaymentDate,
         // Legacy fields
         totalPurchased,
         totalPaid,
