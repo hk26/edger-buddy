@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useVepariData } from '@/hooks/useVepariData';
 import { VepariCard } from '@/components/VepariCard';
 import { AddVepariDialog } from '@/components/AddVepariDialog';
 import { TotalSummaryCard } from '@/components/TotalSummaryCard';
 import { MetalManagement } from '@/components/MetalManagement';
 import { useNavigate, Link } from 'react-router-dom';
-import { Scale, Users, Database, AlertTriangle, Clock, Search, X, BarChart3 } from 'lucide-react';
+import { Scale, Users, Database, AlertTriangle, Clock, Search, X, BarChart3, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getMetalColorClasses } from '@/components/MetalSelector';
+
+type SortOrder = 'desc' | 'asc';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const Index = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMetalFilter, setSelectedMetalFilter] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const summaries = getVepariSummaries();
   const metalSummaries = getMetalTotalSummaries();
@@ -33,32 +36,42 @@ const Index = () => {
   const upcomingCount = getUpcomingDueItems(3).length;
   const metals = getMetals();
 
-  // Filter and sort summaries based on search, metal filter, and last payment date
-  const filteredSummaries = summaries
-    .filter((vepari) => {
-      // Search filter - case insensitive partial match
-      const matchesSearch = searchQuery === '' || 
-        vepari.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Metal filter - check if vepari has transactions in selected metal
-      const matchesMetal = selectedMetalFilter === 'all' || 
-        vepari.metalSummaries.some((ms) => ms.metalId === selectedMetalFilter);
-      
-      return matchesSearch && matchesMetal;
-    })
-    // Sort by last payment date (most recent first), veparis without payments go to end
-    .sort((a, b) => {
-      if (!a.lastPaymentDate && !b.lastPaymentDate) return 0;
-      if (!a.lastPaymentDate) return 1;
-      if (!b.lastPaymentDate) return -1;
-      return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
-    });
+  // Memoized filter and sort to prevent recalculation on every render
+  const filteredSummaries = useMemo(() => {
+    return summaries
+      .filter((vepari) => {
+        // Search filter - case insensitive partial match
+        const matchesSearch = searchQuery === '' || 
+          vepari.name.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Metal filter - check if vepari has transactions in selected metal
+        const matchesMetal = selectedMetalFilter === 'all' || 
+          vepari.metalSummaries.some((ms) => ms.metalId === selectedMetalFilter);
+        
+        return matchesSearch && matchesMetal;
+      })
+      // Sort by last payment date based on sortOrder
+      .sort((a, b) => {
+        if (!a.lastPaymentDate && !b.lastPaymentDate) return 0;
+        if (!a.lastPaymentDate) return 1; // No payment = at end
+        if (!b.lastPaymentDate) return -1;
+        
+        const dateA = new Date(a.lastPaymentDate).getTime();
+        const dateB = new Date(b.lastPaymentDate).getTime();
+        
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+  }, [summaries, searchQuery, selectedMetalFilter, sortOrder]);
 
   const hasActiveFilters = searchQuery !== '' || selectedMetalFilter !== 'all';
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedMetalFilter('all');
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'));
   };
 
   return (
@@ -195,6 +208,22 @@ const Index = () => {
                 </Button>
               )}
             </div>
+
+            {/* Sort Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSortOrder}
+              className="gap-1.5 border-border/50"
+              title={`Sort by last payment: ${sortOrder === 'desc' ? 'newest first' : 'oldest first'}`}
+            >
+              {sortOrder === 'desc' ? (
+                <ArrowDown className="h-4 w-4" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
+              Last Payment
+            </Button>
 
             {/* Metal Filter Chips */}
             <div className="flex flex-wrap gap-2">
