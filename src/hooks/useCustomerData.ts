@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Customer, 
   CustomerPurchase, 
@@ -60,8 +60,8 @@ export const useCustomerData = () => {
     }
   }, [deliveryRecords]);
 
-  // Customer CRUD
-  const addCustomer = (name: string, phone?: string) => {
+  // Customer CRUD - stable references
+  const addCustomer = useCallback((name: string, phone?: string) => {
     const newCustomer: Customer = {
       id: crypto.randomUUID(),
       name,
@@ -70,15 +70,15 @@ export const useCustomerData = () => {
     };
     setCustomers((prev) => [...prev, newCustomer]);
     return newCustomer;
-  };
+  }, []);
 
-  const updateCustomer = (id: string, updates: Partial<Omit<Customer, 'id' | 'createdAt'>>) => {
+  const updateCustomer = useCallback((id: string, updates: Partial<Omit<Customer, 'id' | 'createdAt'>>) => {
     setCustomers((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
-  };
+  }, []);
 
-  const deleteCustomer = (id: string) => {
+  const deleteCustomer = useCallback((id: string) => {
     const newCustomers = customers.filter((c) => c.id !== id);
     const newPurchases = customerPurchases.filter((p) => p.customerId !== id);
     const newPayments = customerPayments.filter((p) => p.customerId !== id);
@@ -93,10 +93,10 @@ export const useCustomerData = () => {
     setCustomerPurchases(newPurchases);
     setCustomerPayments(newPayments);
     setDeliveryRecords(newDeliveries);
-  };
+  }, [customers, customerPurchases, customerPayments, deliveryRecords]);
 
-  // Customer Purchase CRUD
-  const addCustomerPurchase = (purchase: Omit<CustomerPurchase, 'id' | 'deliveredGrams'>) => {
+  // Customer Purchase CRUD - stable references
+  const addCustomerPurchase = useCallback((purchase: Omit<CustomerPurchase, 'id' | 'deliveredGrams'>) => {
     const newPurchase: CustomerPurchase = {
       ...purchase,
       id: crypto.randomUUID(),
@@ -104,42 +104,42 @@ export const useCustomerData = () => {
     };
     setCustomerPurchases((prev) => [...prev, newPurchase]);
     return newPurchase;
-  };
+  }, []);
 
-  const updateCustomerPurchase = (id: string, updates: Partial<Omit<CustomerPurchase, 'id' | 'customerId'>>) => {
+  const updateCustomerPurchase = useCallback((id: string, updates: Partial<Omit<CustomerPurchase, 'id' | 'customerId'>>) => {
     setCustomerPurchases((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
-  };
+  }, []);
 
-  const deleteCustomerPurchase = (id: string) => {
+  const deleteCustomerPurchase = useCallback((id: string) => {
     setCustomerPurchases((prev) => prev.filter((p) => p.id !== id));
     // Also delete associated deliveries
     setDeliveryRecords((prev) => prev.filter((d) => d.purchaseId !== id));
-  };
+  }, []);
 
-  // Customer Payment CRUD
-  const addCustomerPayment = (payment: Omit<CustomerPayment, 'id'>) => {
+  // Customer Payment CRUD - stable references
+  const addCustomerPayment = useCallback((payment: Omit<CustomerPayment, 'id'>) => {
     const newPayment: CustomerPayment = {
       ...payment,
       id: crypto.randomUUID(),
     };
     setCustomerPayments((prev) => [...prev, newPayment]);
     return newPayment;
-  };
+  }, []);
 
-  const updateCustomerPayment = (id: string, updates: Partial<Omit<CustomerPayment, 'id' | 'customerId'>>) => {
+  const updateCustomerPayment = useCallback((id: string, updates: Partial<Omit<CustomerPayment, 'id' | 'customerId'>>) => {
     setCustomerPayments((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
-  };
+  }, []);
 
-  const deleteCustomerPayment = (id: string) => {
+  const deleteCustomerPayment = useCallback((id: string) => {
     setCustomerPayments((prev) => prev.filter((p) => p.id !== id));
-  };
+  }, []);
 
-  // Delivery Recording
-  const addDelivery = (customerId: string, purchaseId: string, weightGrams: number, date: string, notes?: string) => {
+  // Delivery Recording - stable reference
+  const addDelivery = useCallback((customerId: string, purchaseId: string, weightGrams: number, date: string, notes?: string) => {
     const purchase = customerPurchases.find((p) => p.id === purchaseId);
     if (!purchase) return null;
 
@@ -169,16 +169,16 @@ export const useCustomerData = () => {
     );
 
     return newDelivery;
-  };
+  }, [customerPurchases]);
 
-  const getDeliveryHistory = (customerId: string, purchaseId?: string) => {
+  const getDeliveryHistory = useCallback((customerId: string, purchaseId?: string) => {
     return deliveryRecords
       .filter((d) => d.customerId === customerId && (!purchaseId || d.purchaseId === purchaseId))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
+  }, [deliveryRecords]);
 
-  // Summary calculations
-  const getCustomerSummaries = (metals: Metal[]): CustomerSummary[] => {
+  // Memoized customer summaries - the most expensive calculation
+  const computeCustomerSummaries = useCallback((metals: Metal[]): CustomerSummary[] => {
     const getMetalById = (id: string) => metals.find((m) => m.id === id);
 
     return customers.map((customer) => {
@@ -268,33 +268,40 @@ export const useCustomerData = () => {
         totalGrossProfit,
       };
     });
-  };
+  }, [customers, customerPurchases, customerPayments]);
 
-  const getCustomerById = (id: string) => customers.find((c) => c.id === id);
+  // Stable getCustomerSummaries that uses the memoized computation
+  const getCustomerSummaries = useCallback((metals: Metal[]): CustomerSummary[] => {
+    return computeCustomerSummaries(metals);
+  }, [computeCustomerSummaries]);
 
-  const getCustomerPurchases = (customerId: string, metalId?: string) =>
+  const getCustomerById = useCallback((id: string) => customers.find((c) => c.id === id), [customers]);
+
+  const getCustomerPurchases = useCallback((customerId: string, metalId?: string) =>
     customerPurchases
       .filter((p) => p.customerId === customerId && (!metalId || p.metalId === metalId))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [customerPurchases]);
 
-  const getCustomerPayments = (customerId: string) =>
+  const getCustomerPayments = useCallback((customerId: string) =>
     customerPayments
       .filter((p) => p.customerId === customerId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [customerPayments]);
 
-  // Aggregate functions
-  const getTotalPendingAmount = (metals: Metal[]) => {
-    const summaries = getCustomerSummaries(metals);
+  // Aggregate functions with stable references
+  const getTotalPendingAmount = useCallback((metals: Metal[]) => {
+    const summaries = computeCustomerSummaries(metals);
     return summaries.reduce((sum, s) => sum + s.totalPending, 0);
-  };
+  }, [computeCustomerSummaries]);
 
-  const getTotalPendingDelivery = (metals: Metal[]) => {
-    const summaries = getCustomerSummaries(metals);
+  const getTotalPendingDelivery = useCallback((metals: Metal[]) => {
+    const summaries = computeCustomerSummaries(metals);
     return summaries.reduce((sum, s) => sum + s.totalGramsPending, 0);
-  };
+  }, [computeCustomerSummaries]);
 
-  const getTotalPendingDeliveryByMetal = (metals: Metal[]): Map<string, number> => {
-    const summaries = getCustomerSummaries(metals);
+  const getTotalPendingDeliveryByMetal = useCallback((metals: Metal[]): Map<string, number> => {
+    const summaries = computeCustomerSummaries(metals);
     const metalTotals = new Map<string, number>();
 
     for (const summary of summaries) {
@@ -305,7 +312,7 @@ export const useCustomerData = () => {
     }
 
     return metalTotals;
-  };
+  }, [computeCustomerSummaries]);
 
   return {
     customers,

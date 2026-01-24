@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Vepari, Purchase, Payment, Metal, VepariSummary, MetalSummary, OverdueItem, UpcomingDueItem, PurchaseStatus } from '@/types';
 import { addDays, differenceInDays, parseISO, startOfDay } from 'date-fns';
 
@@ -97,16 +97,21 @@ export const useVepariData = () => {
     }
   }, [metals]);
 
-  // Metal CRUD operations
-  const getMetals = (): Metal[] => {
+  // Memoized sorted metals
+  const sortedMetals = useMemo(() => {
     return [...metals].sort((a, b) => a.displayOrder - b.displayOrder);
-  };
+  }, [metals]);
 
-  const getMetalById = (id: string): Metal | undefined => {
+  // Stable metal lookup
+  const getMetals = useCallback((): Metal[] => {
+    return sortedMetals;
+  }, [sortedMetals]);
+
+  const getMetalById = useCallback((id: string): Metal | undefined => {
     return metals.find((m) => m.id === id);
-  };
+  }, [metals]);
 
-  const addMetal = (name: string, symbol: string, color: string) => {
+  const addMetal = useCallback((name: string, symbol: string, color: string) => {
     const maxOrder = Math.max(...metals.map((m) => m.displayOrder), 0);
     const newMetal: Metal = {
       id: crypto.randomUUID(),
@@ -118,15 +123,15 @@ export const useVepariData = () => {
     };
     setMetals((prev) => [...prev, newMetal]);
     return newMetal;
-  };
+  }, [metals]);
 
-  const updateMetal = (id: string, updates: Partial<Omit<Metal, 'id' | 'createdAt' | 'isDefault'>>) => {
+  const updateMetal = useCallback((id: string, updates: Partial<Omit<Metal, 'id' | 'createdAt' | 'isDefault'>>) => {
     setMetals((prev) =>
       prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
     );
-  };
+  }, []);
 
-  const deleteMetal = (id: string) => {
+  const deleteMetal = useCallback((id: string) => {
     const metal = metals.find((m) => m.id === id);
     if (metal?.isDefault) return false; // Cannot delete default metals
     
@@ -139,9 +144,9 @@ export const useVepariData = () => {
     
     setMetals((prev) => prev.filter((m) => m.id !== id));
     return true;
-  };
+  }, [metals, purchases, payments]);
 
-  const canDeleteMetal = (id: string): boolean => {
+  const canDeleteMetal = useCallback((id: string): boolean => {
     const metal = metals.find((m) => m.id === id);
     if (metal?.isDefault) return false;
     
@@ -150,10 +155,10 @@ export const useVepariData = () => {
       payments.some((p) => p.metalId === id);
     
     return !hasTransactions;
-  };
+  }, [metals, purchases, payments]);
 
-  // Vepari CRUD
-  const addVepari = (name: string, phone?: string, defaultCreditDays?: number, defaultPenaltyPercentPerDay?: number) => {
+  // Vepari CRUD - stable references
+  const addVepari = useCallback((name: string, phone?: string, defaultCreditDays?: number, defaultPenaltyPercentPerDay?: number) => {
     const newVepari: Vepari = {
       id: crypto.randomUUID(),
       name,
@@ -164,15 +169,15 @@ export const useVepariData = () => {
     };
     setVeparis((prev) => [...prev, newVepari]);
     return newVepari;
-  };
+  }, []);
 
-  const updateVepari = (id: string, updates: Partial<Omit<Vepari, 'id' | 'createdAt'>>) => {
+  const updateVepari = useCallback((id: string, updates: Partial<Omit<Vepari, 'id' | 'createdAt'>>) => {
     setVeparis((prev) =>
       prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
     );
-  };
+  }, []);
 
-  const deleteVepari = (id: string) => {
+  const deleteVepari = useCallback((id: string) => {
     const newVeparis = veparis.filter((v) => v.id !== id);
     const newPurchases = purchases.filter((p) => p.vepariId !== id);
     const newPayments = payments.filter((p) => p.vepariId !== id);
@@ -184,10 +189,10 @@ export const useVepariData = () => {
     setVeparis(newVeparis);
     setPurchases(newPurchases);
     setPayments(newPayments);
-  };
+  }, [veparis, purchases, payments]);
 
-  // Purchase CRUD
-  const addPurchase = (purchase: Omit<Purchase, 'id'>) => {
+  // Purchase CRUD - stable references
+  const addPurchase = useCallback((purchase: Omit<Purchase, 'id'>) => {
     const newPurchase: Purchase = {
       ...purchase,
       id: crypto.randomUUID(),
@@ -197,9 +202,9 @@ export const useVepariData = () => {
     };
     setPurchases((prev) => [...prev, newPurchase]);
     return newPurchase;
-  };
+  }, []);
 
-  const updatePurchase = (id: string, updates: Partial<Omit<Purchase, 'id' | 'vepariId'>>) => {
+  const updatePurchase = useCallback((id: string, updates: Partial<Omit<Purchase, 'id' | 'vepariId'>>) => {
     setPurchases((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
@@ -213,23 +218,23 @@ export const useVepariData = () => {
         return updated;
       })
     );
-  };
+  }, []);
 
-  const deletePurchase = (id: string) => {
+  const deletePurchase = useCallback((id: string) => {
     setPurchases((prev) => prev.filter((p) => p.id !== id));
-  };
+  }, []);
 
-  // Payment CRUD
-  const addPayment = (payment: Omit<Payment, 'id'>) => {
+  // Payment CRUD - stable references
+  const addPayment = useCallback((payment: Omit<Payment, 'id'>) => {
     const newPayment: Payment = {
       ...payment,
       id: crypto.randomUUID(),
     };
     setPayments((prev) => [...prev, newPayment]);
     return newPayment;
-  };
+  }, []);
 
-  const updatePayment = (id: string, updates: Partial<Omit<Payment, 'id' | 'vepariId'>>) => {
+  const updatePayment = useCallback((id: string, updates: Partial<Omit<Payment, 'id' | 'vepariId'>>) => {
     setPayments((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
@@ -241,15 +246,15 @@ export const useVepariData = () => {
         return updated;
       })
     );
-  };
+  }, []);
 
-  const deletePayment = (id: string) => {
+  const deletePayment = useCallback((id: string) => {
     setPayments((prev) => prev.filter((p) => p.id !== id));
-  };
+  }, []);
 
   // Calculate remaining grams for each purchase using FIFO (filtered by metal)
   // Only considers regular purchases (not cash or bullion)
-  const getPurchaseRemainingGrams = (vepariId: string, metalId?: string): Map<string, number> => {
+  const getPurchaseRemainingGrams = useCallback((vepariId: string, metalId?: string): Map<string, number> => {
     const vepariPurchases = purchases
       .filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId))
       .filter((p) => p.purchaseType === 'regular' || !p.purchaseType) // Only regular purchases
@@ -274,9 +279,9 @@ export const useVepariData = () => {
     }
     
     return remainingMap;
-  };
+  }, [purchases, payments]);
 
-  const getPurchaseStatus = (purchase: Purchase, remainingGrams: number): PurchaseStatus => {
+  const getPurchaseStatus = useCallback((purchase: Purchase, remainingGrams: number): PurchaseStatus => {
     if (remainingGrams <= 0) return 'paid';
     if (!purchase.creditDays || !purchase.dueDate) return 'no-credit';
     
@@ -287,11 +292,12 @@ export const useVepariData = () => {
     if (daysDiff < 0) return 'overdue';
     if (daysDiff <= 3) return 'upcoming';
     return 'normal';
-  };
+  }, []);
 
-  const getOverdueItems = (): OverdueItem[] => {
+  // Memoized overdue items calculation
+  const overdueItems = useMemo((): OverdueItem[] => {
     const today = startOfDay(new Date());
-    const overdueItems: OverdueItem[] = [];
+    const items: OverdueItem[] = [];
     
     for (const vepari of veparis) {
       const remainingMap = getPurchaseRemainingGrams(vepari.id);
@@ -299,7 +305,7 @@ export const useVepariData = () => {
       
       for (const purchase of vepariPurchases) {
         const remainingGrams = remainingMap.get(purchase.id) || 0;
-        const metal = getMetalById(purchase.metalId);
+        const metal = metals.find((m) => m.id === purchase.metalId);
         
         if (remainingGrams > 0 && purchase.dueDate && purchase.creditDays && metal) {
           const dueDate = startOfDay(parseISO(purchase.dueDate));
@@ -311,7 +317,7 @@ export const useVepariData = () => {
               ? remainingGrams * purchase.ratePerGram * penaltyPercent / 100
               : 0;
             
-            overdueItems.push({
+            items.push({
               purchase,
               vepari,
               metal,
@@ -325,10 +331,14 @@ export const useVepariData = () => {
       }
     }
     
-    return overdueItems.sort((a, b) => b.daysOverdue - a.daysOverdue);
-  };
+    return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [veparis, purchases, metals, getPurchaseRemainingGrams]);
 
-  const getUpcomingDueItems = (days: number = 3): UpcomingDueItem[] => {
+  const getOverdueItems = useCallback((): OverdueItem[] => {
+    return overdueItems;
+  }, [overdueItems]);
+
+  const getUpcomingDueItems = useCallback((days: number = 3): UpcomingDueItem[] => {
     const today = startOfDay(new Date());
     const upcomingItems: UpcomingDueItem[] = [];
     
@@ -338,7 +348,7 @@ export const useVepariData = () => {
       
       for (const purchase of vepariPurchases) {
         const remainingGrams = remainingMap.get(purchase.id) || 0;
-        const metal = getMetalById(purchase.metalId);
+        const metal = metals.find((m) => m.id === purchase.metalId);
         
         if (remainingGrams > 0 && purchase.dueDate && purchase.creditDays && metal) {
           const dueDate = startOfDay(parseISO(purchase.dueDate));
@@ -358,21 +368,24 @@ export const useVepariData = () => {
     }
     
     return upcomingItems.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
-  };
+  }, [veparis, purchases, metals, getPurchaseRemainingGrams]);
 
-  const getTotalOverdueGrams = (): number => {
-    return getOverdueItems().reduce((sum, item) => sum + item.remainingGrams, 0);
-  };
+  const getTotalOverdueGrams = useCallback((): number => {
+    return overdueItems.reduce((sum, item) => sum + item.remainingGrams, 0);
+  }, [overdueItems]);
 
-  const getTotalOverduePenalty = (): number => {
-    return getOverdueItems().reduce((sum, item) => sum + item.estimatedPenaltyAmount, 0);
-  };
+  const getTotalOverduePenalty = useCallback((): number => {
+    return overdueItems.reduce((sum, item) => sum + item.estimatedPenaltyAmount, 0);
+  }, [overdueItems]);
 
-  const getOverdueCount = (): number => {
-    return getOverdueItems().length;
-  };
+  const getOverdueCount = useCallback((): number => {
+    return overdueItems.length;
+  }, [overdueItems]);
 
-  const getVepariSummaries = (): VepariSummary[] => {
+  // Memoized vepari summaries - the most expensive calculation
+  const vepariSummaries = useMemo((): VepariSummary[] => {
+    const today = startOfDay(new Date());
+    
     return veparis.map((vepari) => {
       const vepariPurchases = purchases.filter((p) => p.vepariId === vepari.id);
       const vepariPayments = payments.filter((p) => p.vepariId === vepari.id);
@@ -402,7 +415,7 @@ export const useVepariData = () => {
       let totalStoneChargesPaid = 0;
 
       for (const metalId of metalIds) {
-        const metal = getMetalById(metalId);
+        const metal = metals.find((m) => m.id === metalId);
         if (!metal) continue;
 
         const metalPurchases = vepariPurchases.filter((p) => p.metalId === metalId);
@@ -445,7 +458,6 @@ export const useVepariData = () => {
 
         // Count overdue items for this metal
         const remainingMap = getPurchaseRemainingGrams(vepari.id, metalId);
-        const today = startOfDay(new Date());
         let overdueCount = 0;
         
         for (const purchase of regularPurchases) {
@@ -493,8 +505,8 @@ export const useVepariData = () => {
 
       // Sort metal summaries by display order
       metalSummaries.sort((a, b) => {
-        const metalA = getMetalById(a.metalId);
-        const metalB = getMetalById(b.metalId);
+        const metalA = metals.find((m) => m.id === a.metalId);
+        const metalB = metals.find((m) => m.id === b.metalId);
         return (metalA?.displayOrder || 0) - (metalB?.displayOrder || 0);
       });
 
@@ -515,35 +527,43 @@ export const useVepariData = () => {
         overdueCount: totalOverdueCount,
       };
     });
-  };
+  }, [veparis, purchases, payments, metals, getPurchaseRemainingGrams]);
 
-  const getVepariById = (id: string) => veparis.find((v) => v.id === id);
+  const getVepariSummaries = useCallback((): VepariSummary[] => {
+    return vepariSummaries;
+  }, [vepariSummaries]);
 
-  const getVepariPurchases = (vepariId: string, metalId?: string) =>
+  const getVepariById = useCallback((id: string) => veparis.find((v) => v.id === id), [veparis]);
+
+  const getVepariPurchases = useCallback((vepariId: string, metalId?: string) =>
     purchases
       .filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [purchases]);
 
-  const getVepariPayments = (vepariId: string, metalId?: string) =>
+  const getVepariPayments = useCallback((vepariId: string, metalId?: string) =>
     payments
       .filter((p) => p.vepariId === vepariId && (!metalId || p.metalId === metalId))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [payments]);
 
-  const getTotalRemaining = () => {
-    const summaries = getVepariSummaries();
-    return summaries.reduce((sum, s) => sum + s.totalRemainingWeight, 0);
-  };
+  // Memoized total calculations based on summaries
+  const totalRemaining = useMemo(() => {
+    return vepariSummaries.reduce((sum, s) => sum + s.totalRemainingWeight, 0);
+  }, [vepariSummaries]);
 
-  const getTotalRemainingStoneCharges = () => {
-    const summaries = getVepariSummaries();
-    return summaries.reduce((sum, s) => sum + s.totalRemainingStoneCharges, 0);
-  };
+  const getTotalRemaining = useCallback(() => totalRemaining, [totalRemaining]);
 
-  const getTotalRemainingByMetal = (): Map<string, number> => {
-    const summaries = getVepariSummaries();
+  const totalRemainingStoneCharges = useMemo(() => {
+    return vepariSummaries.reduce((sum, s) => sum + s.totalRemainingStoneCharges, 0);
+  }, [vepariSummaries]);
+
+  const getTotalRemainingStoneCharges = useCallback(() => totalRemainingStoneCharges, [totalRemainingStoneCharges]);
+
+  const totalRemainingByMetal = useMemo((): Map<string, number> => {
     const metalTotals = new Map<string, number>();
     
-    for (const summary of summaries) {
+    for (const summary of vepariSummaries) {
       for (const metalSummary of summary.metalSummaries) {
         const current = metalTotals.get(metalSummary.metalId) || 0;
         metalTotals.set(metalSummary.metalId, current + metalSummary.remainingWeight);
@@ -551,13 +571,14 @@ export const useVepariData = () => {
     }
     
     return metalTotals;
-  };
+  }, [vepariSummaries]);
 
-  const getMetalTotalSummaries = () => {
-    const summaries = getVepariSummaries();
+  const getTotalRemainingByMetal = useCallback((): Map<string, number> => totalRemainingByMetal, [totalRemainingByMetal]);
+
+  const metalTotalSummaries = useMemo(() => {
     const metalTotals: Record<string, { remaining: number; stoneCharges: number; vepariCount: number }> = {};
     
-    for (const summary of summaries) {
+    for (const summary of vepariSummaries) {
       for (const metalSummary of summary.metalSummaries) {
         if (!metalTotals[metalSummary.metalId]) {
           metalTotals[metalSummary.metalId] = { remaining: 0, stoneCharges: 0, vepariCount: 0 };
@@ -570,13 +591,15 @@ export const useVepariData = () => {
       }
     }
     
-    return getMetals()
+    return sortedMetals
       .filter((metal) => metalTotals[metal.id])
       .map((metal) => ({
         metal,
         ...metalTotals[metal.id],
       }));
-  };
+  }, [vepariSummaries, sortedMetals]);
+
+  const getMetalTotalSummaries = useCallback(() => metalTotalSummaries, [metalTotalSummaries]);
 
   return {
     veparis,
