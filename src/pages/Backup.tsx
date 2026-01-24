@@ -10,6 +10,11 @@ const STORAGE_KEYS = {
   purchases: 'gold-tracker-purchases',
   payments: 'gold-tracker-payments',
   metals: 'gold-tracker-metals',
+  // Customer ledger keys
+  customers: 'gold-tracker-customers',
+  customerPurchases: 'gold-tracker-customer-purchases',
+  customerPayments: 'gold-tracker-customer-payments',
+  deliveryRecords: 'gold-tracker-delivery-records',
 };
 
 const DEFAULT_METALS = [
@@ -25,12 +30,19 @@ const Backup = () => {
   const handleExport = () => {
     try {
       const data = {
+        // Vepari (supplier) data
         veparis: JSON.parse(localStorage.getItem(STORAGE_KEYS.veparis) || '[]'),
         purchases: JSON.parse(localStorage.getItem(STORAGE_KEYS.purchases) || '[]'),
         payments: JSON.parse(localStorage.getItem(STORAGE_KEYS.payments) || '[]'),
         metals: JSON.parse(localStorage.getItem(STORAGE_KEYS.metals) || JSON.stringify(DEFAULT_METALS)),
+        // Customer ledger data
+        customers: JSON.parse(localStorage.getItem(STORAGE_KEYS.customers) || '[]'),
+        customerPurchases: JSON.parse(localStorage.getItem(STORAGE_KEYS.customerPurchases) || '[]'),
+        customerPayments: JSON.parse(localStorage.getItem(STORAGE_KEYS.customerPayments) || '[]'),
+        deliveryRecords: JSON.parse(localStorage.getItem(STORAGE_KEYS.deliveryRecords) || '[]'),
+        // Metadata
         exportedAt: new Date().toISOString(),
-        version: '2.0', // Updated version for multi-metal support
+        version: '3.0', // Updated version for customer ledger support
       };
 
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -59,7 +71,7 @@ const Backup = () => {
         const content = e.target?.result as string;
         const data = JSON.parse(content);
 
-        // Validate the data structure
+        // Validate the data structure (only vepari data is required for backward compatibility)
         if (!data.veparis || !data.purchases || !data.payments) {
           toast.error('Invalid backup file format');
           return;
@@ -67,24 +79,41 @@ const Backup = () => {
 
         // Confirm before overwriting
         if (window.confirm('This will replace all existing data. Are you sure you want to continue?')) {
+          // === Vepari (Supplier) Data ===
           localStorage.setItem(STORAGE_KEYS.veparis, JSON.stringify(data.veparis));
           
-          // Migrate purchases if they don't have metalId
+          // Migrate purchases if they don't have metalId or purchaseType
           const migratedPurchases = data.purchases.map((p: any) => ({
             ...p,
             metalId: p.metalId || 'gold',
+            purchaseType: p.purchaseType || 'regular',
           }));
           localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(migratedPurchases));
           
-          // Migrate payments if they don't have metalId
+          // Migrate payments if they don't have metalId or paymentType
           const migratedPayments = data.payments.map((p: any) => ({
             ...p,
             metalId: p.metalId || 'gold',
+            paymentType: p.paymentType || 'metal',
           }));
           localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(migratedPayments));
           
           // Import metals or use defaults
           localStorage.setItem(STORAGE_KEYS.metals, JSON.stringify(data.metals || DEFAULT_METALS));
+
+          // === Customer Ledger Data (optional - for backward compatibility) ===
+          if (data.customers) {
+            localStorage.setItem(STORAGE_KEYS.customers, JSON.stringify(data.customers));
+          }
+          if (data.customerPurchases) {
+            localStorage.setItem(STORAGE_KEYS.customerPurchases, JSON.stringify(data.customerPurchases));
+          }
+          if (data.customerPayments) {
+            localStorage.setItem(STORAGE_KEYS.customerPayments, JSON.stringify(data.customerPayments));
+          }
+          if (data.deliveryRecords) {
+            localStorage.setItem(STORAGE_KEYS.deliveryRecords, JSON.stringify(data.deliveryRecords));
+          }
 
           toast.success('Backup imported successfully! Redirecting...');
           
@@ -110,12 +139,20 @@ const Backup = () => {
     const purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.purchases) || '[]');
     const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.payments) || '[]');
     const metals = JSON.parse(localStorage.getItem(STORAGE_KEYS.metals) || JSON.stringify(DEFAULT_METALS));
+    const customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.customers) || '[]');
+    const customerPurchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.customerPurchases) || '[]');
+    const customerPayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.customerPayments) || '[]');
+    const deliveryRecords = JSON.parse(localStorage.getItem(STORAGE_KEYS.deliveryRecords) || '[]');
 
     return {
       veparis: veparis.length,
       purchases: purchases.length,
       payments: payments.length,
       metals: metals.length,
+      customers: customers.length,
+      customerPurchases: customerPurchases.length,
+      customerPayments: customerPayments.length,
+      deliveryRecords: deliveryRecords.length,
     };
   };
 
@@ -161,22 +198,51 @@ const Backup = () => {
             <CardDescription>Your stored data overview</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="rounded-lg bg-background/50 p-4">
-                <p className="text-2xl font-bold gold-text">{stats.veparis}</p>
-                <p className="text-sm text-muted-foreground">Veparis</p>
+            <div className="space-y-4">
+              {/* Supplier (Vepari) Data */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Supplier Ledger</p>
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.veparis}</p>
+                    <p className="text-xs text-muted-foreground">Veparis</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.purchases}</p>
+                    <p className="text-xs text-muted-foreground">Purchases</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.payments}</p>
+                    <p className="text-xs text-muted-foreground">Payments</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.metals}</p>
+                    <p className="text-xs text-muted-foreground">Metals</p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-lg bg-background/50 p-4">
-                <p className="text-2xl font-bold gold-text">{stats.purchases}</p>
-                <p className="text-sm text-muted-foreground">Purchases</p>
-              </div>
-              <div className="rounded-lg bg-background/50 p-4">
-                <p className="text-2xl font-bold gold-text">{stats.payments}</p>
-                <p className="text-sm text-muted-foreground">Payments</p>
-              </div>
-              <div className="rounded-lg bg-background/50 p-4">
-                <p className="text-2xl font-bold gold-text">{stats.metals}</p>
-                <p className="text-sm text-muted-foreground">Metals</p>
+              
+              {/* Customer Data */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Customer Ledger</p>
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.customers}</p>
+                    <p className="text-xs text-muted-foreground">Customers</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.customerPurchases}</p>
+                    <p className="text-xs text-muted-foreground">Sales</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.customerPayments}</p>
+                    <p className="text-xs text-muted-foreground">Receipts</p>
+                  </div>
+                  <div className="rounded-lg bg-background/50 p-3">
+                    <p className="text-xl font-bold gold-text">{stats.deliveryRecords}</p>
+                    <p className="text-xs text-muted-foreground">Deliveries</p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -200,11 +266,10 @@ const Backup = () => {
                 <div className="text-sm text-muted-foreground">
                   <p className="font-medium text-foreground mb-1">What's included:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>All vepari records</li>
-                    <li>All purchase transactions</li>
-                    <li>All payment records</li>
-                    <li>Stone charges data</li>
-                    <li>Custom metals</li>
+                    <li>All vepari (supplier) records & transactions</li>
+                    <li>All customer records & sales</li>
+                    <li>All payment & delivery records</li>
+                    <li>Custom metals configuration</li>
                   </ul>
                 </div>
               </div>
