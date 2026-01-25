@@ -452,10 +452,14 @@ export const useVepariData = () => {
           .filter(p => !p.balanceConvertedToMoney)
           .reduce((sum, p) => sum + (p.balanceGrams || 0), 0);
         
-        // Bullion balance cash includes both the converted balance and labour charges
+        // Bullion labour charges (applies to all bullion transactions, regardless of cash/metal balance)
+        const totalBullionLabourCharges = bullionPurchases
+          .reduce((sum, p) => sum + (p.bullionLabourCharges || 0), 0);
+        
+        // Bullion balance cash includes converted balance + all labour charges
         const bullionBalanceCash = bullionPurchases
           .filter(p => p.balanceConvertedToMoney)
-          .reduce((sum, p) => sum + (p.balanceCashAmount || 0) + (p.bullionLabourCharges || 0), 0);
+          .reduce((sum, p) => sum + (p.balanceCashAmount || 0), 0) + totalBullionLabourCharges;
 
         // Count overdue items for this metal
         const remainingMap = getPurchaseRemainingGrams(vepari.id, metalId);
