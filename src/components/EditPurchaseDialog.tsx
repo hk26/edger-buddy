@@ -54,6 +54,7 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
   const [freshMetalReceived, setFreshMetalReceived] = useState(purchase.freshMetalReceived?.toString() || '');
   const [convertBalanceToMoney, setConvertBalanceToMoney] = useState(purchase.balanceConvertedToMoney || false);
   const [balanceRate, setBalanceRate] = useState(purchase.balanceRate?.toString() || '');
+  const [bullionLabourCharges, setBullionLabourCharges] = useState(purchase.bullionLabourCharges?.toString() || '');
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -76,6 +77,7 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
       setFreshMetalReceived(purchase.freshMetalReceived?.toString() || '');
       setConvertBalanceToMoney(purchase.balanceConvertedToMoney || false);
       setBalanceRate(purchase.balanceRate?.toString() || '');
+      setBullionLabourCharges(purchase.bullionLabourCharges?.toString() || '');
     }
   }, [open, purchase]);
 
@@ -158,6 +160,7 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
         balanceConvertedToMoney: convertBalanceToMoney,
         balanceRate: convertBalanceToMoney && balanceRate ? parseFloat(balanceRate) : undefined,
         balanceCashAmount: convertBalanceToMoney ? balanceCashAmount : undefined,
+        bullionLabourCharges: bullionLabourCharges ? parseFloat(bullionLabourCharges) : undefined,
         // Clear other type fields
         weightGrams: undefined,
         ratePerGram: undefined,
@@ -522,7 +525,22 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
 
               {/* Balance Settlement */}
               {balanceGrams !== 0 && (
-                <div className="border-t border-border/30 pt-4">
+                <div className="border-t border-border/30 pt-4 space-y-4">
+                  {/* Labour/Packaging Charges */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-bullionLabourCharges">Labour/Packaging Charges ₹ (Optional)</Label>
+                    <Input
+                      id="edit-bullionLabourCharges"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bullionLabourCharges}
+                      onChange={(e) => setBullionLabourCharges(e.target.value)}
+                      placeholder="500"
+                      className="border-border/50 bg-secondary"
+                    />
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="edit-convertBalance" 
