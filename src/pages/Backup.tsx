@@ -87,6 +87,8 @@ const Backup = () => {
             ...p,
             metalId: p.metalId || 'gold',
             purchaseType: p.purchaseType || 'regular',
+            // Preserve bullionLabourCharges if present
+            bullionLabourCharges: p.bullionLabourCharges,
           }));
           localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(migratedPurchases));
           
