@@ -51,7 +51,6 @@ export interface Purchase {
   balanceConvertedToMoney?: boolean; // If balance was settled in cash
   balanceRate?: number;              // Rate used for cash conversion
   balanceCashAmount?: number;        // Total cash for balance settlement
-  bullionLabourCharges?: number;     // Labour/packaging charges for bullion (when balance exists)
 }
 
 export type PaymentType = 'metal' | 'cash';

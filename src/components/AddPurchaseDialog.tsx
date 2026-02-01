@@ -56,7 +56,6 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
   const [freshMetalReceived, setFreshMetalReceived] = useState('');
   const [convertBalanceToMoney, setConvertBalanceToMoney] = useState(false);
   const [balanceRate, setBalanceRate] = useState('');
-  const [bullionLabourCharges, setBullionLabourCharges] = useState('');
 
   // Update metalId when defaultMetalId changes
   useEffect(() => {
@@ -131,7 +130,6 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
         balanceConvertedToMoney: convertBalanceToMoney,
         balanceRate: convertBalanceToMoney && balanceRate ? parseFloat(balanceRate) : undefined,
         balanceCashAmount: convertBalanceToMoney ? balanceCashAmount : undefined,
-        bullionLabourCharges: bullionLabourCharges ? parseFloat(bullionLabourCharges) : undefined,
       });
     }
 
@@ -157,7 +155,6 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
     setFreshMetalReceived('');
     setConvertBalanceToMoney(false);
     setBalanceRate('');
-    setBullionLabourCharges('');
   };
 
   const calculatedDueDate = trackCredit && creditDays && date
@@ -506,22 +503,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
 
               {/* Balance Settlement */}
               {balanceGrams !== 0 && (
-                <div className="border-t border-border/30 pt-4 space-y-4">
-                  {/* Labour/Packaging Charges */}
-                  <div className="space-y-2">
-                    <Label htmlFor="bullionLabourCharges">Labour/Packaging Charges ₹ (Optional)</Label>
-                    <Input
-                      id="bullionLabourCharges"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={bullionLabourCharges}
-                      onChange={(e) => setBullionLabourCharges(e.target.value)}
-                      placeholder="500"
-                      className="border-border/50 bg-secondary"
-                    />
-                  </div>
-
+                <div className="border-t border-border/30 pt-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="convertBalance" 

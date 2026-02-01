@@ -219,16 +219,6 @@ const BullionPurchaseDetails = memo(({ purchase }: { purchase: Purchase }) => (
           </span>
         </div>
         
-        {/* Labour/Packaging charges */}
-        {(purchase.bullionLabourCharges || 0) > 0 && (
-          <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Labour/Pkg:</span>
-            <span className="number-display font-medium text-amber-500">
-              ₹{purchase.bullionLabourCharges!.toLocaleString('en-IN')}
-            </span>
-          </div>
-        )}
-        
         {/* Cash settlement */}
         {purchase.balanceConvertedToMoney && (
           <div className="mt-1 flex items-center justify-between text-xs">
