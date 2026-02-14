@@ -1,10 +1,12 @@
 import { Metal } from '@/types';
-import { Scale, Gem } from 'lucide-react';
+import { Scale, Gem, Wallet } from 'lucide-react';
 import { getMetalColorClasses } from './MetalSelector';
 
 interface MetalSummaryData {
   metal: Metal;
   remaining: number;
+  pending: number;
+  advance: number;
   stoneCharges: number;
   vepariCount: number;
 }
@@ -33,7 +35,7 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {metalSummaries.map(({ metal, remaining, stoneCharges, vepariCount }) => {
+      {metalSummaries.map(({ metal, pending, advance, stoneCharges, vepariCount }) => {
         const colors = getMetalColorClasses(metal.color);
         
         return (
@@ -54,11 +56,11 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
                         {metal.symbol}
                       </span>
                       <p className="text-sm uppercase tracking-wider text-muted-foreground">
-                        {metal.name} Remaining
+                        {metal.name} Pending
                       </p>
                     </div>
                     <p className={`number-display mt-2 text-3xl font-bold ${colors.text}`}>
-                      {remaining.toFixed(4)}
+                      {pending.toFixed(4)}
                       <span className="ml-2 text-lg text-muted-foreground">grams</span>
                     </p>
                   </div>
@@ -66,6 +68,25 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
                     <Scale className={`h-7 w-7 ${colors.text}`} />
                   </div>
                 </div>
+
+                {/* Advance/Credit display */}
+                {advance > 0 && (
+                  <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
+                        <Wallet className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                          Advance (Credit)
+                        </p>
+                        <p className="number-display mt-0.5 text-lg font-bold text-emerald-500">
+                          {advance.toFixed(4)}g
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {stoneCharges > 0 && (
                   <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4">
