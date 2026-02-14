@@ -91,7 +91,7 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
     : 0;
   
   const balanceCashAmount = convertBalanceToMoney && balanceRate && balanceGrams
-    ? Math.abs(balanceGrams) * parseFloat(balanceRate)
+    ? Math.abs(balanceGrams) * parseFloat(balanceRate) + (bullionLabourCharges ? parseFloat(bullionLabourCharges) : 0)
     : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -571,7 +571,11 @@ export const EditPurchaseDialog = ({ purchase, metals, onUpdate }: EditPurchaseD
                         <div className={`rounded-md p-3 ${balanceGrams > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
                           <p className="text-sm text-muted-foreground">Settlement Amount:</p>
                           <p className={`number-display text-xl font-bold ${balanceGrams > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                            {Math.abs(balanceGrams).toFixed(4)}g × ₹{parseFloat(balanceRate).toLocaleString('en-IN')} = ₹{balanceCashAmount.toLocaleString('en-IN')}
+                            ₹{balanceCashAmount.toLocaleString('en-IN')}
+                          </p>
+                          <p className="number-display text-xs text-muted-foreground mt-0.5">
+                            {Math.abs(balanceGrams).toFixed(4)}g × ₹{parseFloat(balanceRate).toLocaleString('en-IN')} = ₹{(Math.abs(balanceGrams) * parseFloat(balanceRate)).toLocaleString('en-IN')}
+                            {bullionLabourCharges && parseFloat(bullionLabourCharges) > 0 ? ` + ₹${parseFloat(bullionLabourCharges).toLocaleString('en-IN')} labour` : ''}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {balanceGrams > 0 ? 'You pay to bullion' : 'Bullion pays you'}
