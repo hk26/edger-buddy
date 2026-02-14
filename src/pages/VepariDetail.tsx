@@ -131,15 +131,31 @@ const VepariDetail = () => {
     [selectedMetalId, vepariSummary]
   );
 
-  // Regular metal tracking
-  const { totalPurchased, totalPaid, remaining } = useMemo(() => {
+  // Regular metal tracking - split into pending and advance
+  const { totalPurchased, totalPaid, remaining, pendingGrams, advanceGrams } = useMemo(() => {
     const purchased = selectedMetalId === 'all' 
       ? vepariSummary?.totalPurchased || 0
       : currentMetalSummary?.totalPurchased || 0;
     const paid = selectedMetalId === 'all'
       ? vepariSummary?.totalPaid || 0
       : currentMetalSummary?.totalPaid || 0;
-    return { totalPurchased: purchased, totalPaid: paid, remaining: purchased - paid };
+    const rem = purchased - paid;
+    
+    // When viewing all metals, calculate pending and advance separately per metal
+    let pending = 0;
+    let advance = 0;
+    if (selectedMetalId === 'all') {
+      (vepariSummary?.metalSummaries || []).forEach(ms => {
+        const r = ms.remainingWeight;
+        if (r > 0) pending += r;
+        else if (r < 0) advance += Math.abs(r);
+      });
+    } else {
+      if (rem > 0) pending = rem;
+      else if (rem < 0) advance = Math.abs(rem);
+    }
+    
+    return { totalPurchased: purchased, totalPaid: paid, remaining: rem, pendingGrams: pending, advanceGrams: advance };
   }, [selectedMetalId, vepariSummary, currentMetalSummary]);
 
   // Stone charges
@@ -323,7 +339,8 @@ const VepariDetail = () => {
                 </CardContent>
               </Card>
 
-              <Card className={`border-primary/30 bg-card card-glow ${selectedColors?.border || ''}`}>
+              {/* Pending card */}
+              <Card className={`border-primary/30 bg-card ${pendingGrams > 0 ? 'card-glow' : ''} ${selectedColors?.border || ''}`}>
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-full ${selectedColors?.bg || 'bg-primary/10'}`}>
@@ -334,12 +351,29 @@ const VepariDetail = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Remaining</p>
-                      <p className={`number-display text-2xl font-bold ${selectedColors?.text || 'text-primary'}`}>{remaining.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Pending</p>
+                      <p className={`number-display text-2xl font-bold ${selectedColors?.text || 'text-primary'}`}>{pendingGrams.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Advance/Credit card - only show if there's advance */}
+              {advanceGrams > 0 && (
+                <Card className="border-emerald-500/30 bg-card">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+                        <Wallet className="h-5 w-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Advance (Credit)</p>
+                        <p className="number-display text-2xl font-bold text-emerald-500">{advanceGrams.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Cash Summary */}
