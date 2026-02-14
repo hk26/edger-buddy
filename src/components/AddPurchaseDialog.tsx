@@ -56,6 +56,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
   const [freshMetalReceived, setFreshMetalReceived] = useState('');
   const [convertBalanceToMoney, setConvertBalanceToMoney] = useState(false);
   const [balanceRate, setBalanceRate] = useState('');
+  const [bullionLabourCharges, setBullionLabourCharges] = useState('');
 
   // Update metalId when defaultMetalId changes
   useEffect(() => {
@@ -83,7 +84,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
     : 0;
   
   const balanceCashAmount = convertBalanceToMoney && balanceRate && balanceGrams
-    ? Math.abs(balanceGrams) * parseFloat(balanceRate) + (labourCharges ? parseFloat(labourCharges) : 0)
+    ? Math.abs(balanceGrams) * parseFloat(balanceRate)
     : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,7 +131,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
         balanceConvertedToMoney: convertBalanceToMoney,
         balanceRate: convertBalanceToMoney && balanceRate ? parseFloat(balanceRate) : undefined,
         balanceCashAmount: convertBalanceToMoney ? balanceCashAmount : undefined,
-        labourCharges: labourCharges ? parseFloat(labourCharges) : undefined,
+        bullionLabourCharges: bullionLabourCharges ? parseFloat(bullionLabourCharges) : undefined,
       });
     }
 
@@ -156,6 +157,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
     setFreshMetalReceived('');
     setConvertBalanceToMoney(false);
     setBalanceRate('');
+    setBullionLabourCharges('');
   };
 
   const calculatedDueDate = trackCredit && creditDays && date
@@ -502,24 +504,24 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
                 )}
               </div>
 
-              {/* Labour Charges for fresh bars */}
-              <div className="space-y-2">
-                <Label htmlFor="bullionLabour">Labour Charges ₹ (Optional)</Label>
-                <Input
-                  id="bullionLabour"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={labourCharges}
-                  onChange={(e) => setLabourCharges(e.target.value)}
-                  placeholder="e.g., 500"
-                  className="border-border/50 bg-secondary"
-                />
-              </div>
-
               {/* Balance Settlement */}
               {balanceGrams !== 0 && (
-                <div className="border-t border-border/30 pt-4">
+                <div className="border-t border-border/30 pt-4 space-y-4">
+                  {/* Labour/Packaging Charges */}
+                  <div className="space-y-2">
+                    <Label htmlFor="bullionLabourCharges">Labour/Packaging Charges ₹ (Optional)</Label>
+                    <Input
+                      id="bullionLabourCharges"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bullionLabourCharges}
+                      onChange={(e) => setBullionLabourCharges(e.target.value)}
+                      placeholder="500"
+                      className="border-border/50 bg-secondary"
+                    />
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="convertBalance" 
@@ -550,13 +552,7 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
                         <div className={`rounded-md p-3 ${balanceGrams > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
                           <p className="text-sm text-muted-foreground">Settlement Amount:</p>
                           <p className={`number-display text-xl font-bold ${balanceGrams > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                            {Math.abs(balanceGrams).toFixed(4)}g × ₹{parseFloat(balanceRate).toLocaleString('en-IN')} = ₹{(Math.abs(balanceGrams) * parseFloat(balanceRate)).toLocaleString('en-IN')}
-                            {labourCharges && parseFloat(labourCharges) > 0 && (
-                              <span className="text-sm font-normal text-muted-foreground"> + ₹{parseFloat(labourCharges).toLocaleString('en-IN')} labour</span>
-                            )}
-                            {labourCharges && parseFloat(labourCharges) > 0 && (
-                              <span className="block mt-1"> = ₹{balanceCashAmount.toLocaleString('en-IN')}</span>
-                            )}
+                            {Math.abs(balanceGrams).toFixed(4)}g × ₹{parseFloat(balanceRate).toLocaleString('en-IN')} = ₹{balanceCashAmount.toLocaleString('en-IN')}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {balanceGrams > 0 ? 'You pay to bullion' : 'Bullion pays you'}
