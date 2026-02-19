@@ -1,5 +1,5 @@
 import { Metal } from '@/types';
-import { Scale, Gem, Wallet } from 'lucide-react';
+import { Scale, Gem, Wallet, Banknote, IndianRupee } from 'lucide-react';
 import { getMetalColorClasses } from './MetalSelector';
 
 interface MetalSummaryData {
@@ -8,6 +8,7 @@ interface MetalSummaryData {
   pending: number;
   advance: number;
   stoneCharges: number;
+  cashPending: number;
   vepariCount: number;
 }
 
@@ -35,8 +36,9 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {metalSummaries.map(({ metal, pending, advance, stoneCharges, vepariCount }) => {
+      {metalSummaries.map(({ metal, pending, advance, stoneCharges, cashPending, vepariCount }) => {
         const colors = getMetalColorClasses(metal.color);
+        const totalCashToPay = cashPending + stoneCharges;
         
         return (
           <div 
@@ -49,6 +51,8 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
             <div className="relative rounded-2xl bg-card p-6">
               <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} to-transparent`} />
               <div className="relative">
+
+                {/* Metal Pending */}
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
@@ -87,21 +91,51 @@ export const TotalSummaryCard = ({ metalSummaries, totalVepariCount }: TotalSumm
                     </div>
                   </div>
                 )}
-                
-                {stoneCharges > 0 && (
-                  <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
-                        <Gem className="h-4 w-4 text-amber-500" />
+
+                {/* Total Cash to Pay — shown only when there's any cash liability */}
+                {totalCashToPay > 0 && (
+                  <div className="mt-4 border-t border-border/50 pt-4">
+                    {/* Total header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                          <IndianRupee className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                            Total Cash to Pay
+                          </p>
+                          <p className="number-display mt-0.5 text-lg font-bold text-blue-500">
+                            ₹{totalCashToPay.toLocaleString('en-IN')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                          Stone Charges
-                        </p>
-                        <p className="number-display mt-0.5 text-lg font-bold text-amber-500">
-                          ₹{stoneCharges.toLocaleString('en-IN')}
-                        </p>
-                      </div>
+                    </div>
+
+                    {/* Breakdown */}
+                    <div className="mt-3 space-y-2 rounded-lg bg-muted/40 p-3">
+                      {cashPending > 0 && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="h-3.5 w-3.5 text-blue-400" />
+                            <p className="text-xs text-muted-foreground">Cash Purchases Due</p>
+                          </div>
+                          <p className="number-display text-sm font-semibold text-blue-400">
+                            ₹{cashPending.toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      )}
+                      {stoneCharges > 0 && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Gem className="h-3.5 w-3.5 text-amber-500" />
+                            <p className="text-xs text-muted-foreground">Stone Charges Due</p>
+                          </div>
+                          <p className="number-display text-sm font-semibold text-amber-500">
+                            ₹{stoneCharges.toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

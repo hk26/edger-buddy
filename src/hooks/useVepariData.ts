@@ -576,12 +576,12 @@ export const useVepariData = () => {
   const getTotalRemainingByMetal = useCallback((): Map<string, number> => totalRemainingByMetal, [totalRemainingByMetal]);
 
   const metalTotalSummaries = useMemo(() => {
-    const metalTotals: Record<string, { remaining: number; pending: number; advance: number; stoneCharges: number; vepariCount: number }> = {};
+    const metalTotals: Record<string, { remaining: number; pending: number; advance: number; stoneCharges: number; cashPending: number; vepariCount: number }> = {};
     
     for (const summary of vepariSummaries) {
       for (const metalSummary of summary.metalSummaries) {
         if (!metalTotals[metalSummary.metalId]) {
-          metalTotals[metalSummary.metalId] = { remaining: 0, pending: 0, advance: 0, stoneCharges: 0, vepariCount: 0 };
+          metalTotals[metalSummary.metalId] = { remaining: 0, pending: 0, advance: 0, stoneCharges: 0, cashPending: 0, vepariCount: 0 };
         }
         metalTotals[metalSummary.metalId].remaining += metalSummary.remainingWeight;
         if (metalSummary.remainingWeight > 0) {
@@ -590,7 +590,8 @@ export const useVepariData = () => {
           metalTotals[metalSummary.metalId].advance += Math.abs(metalSummary.remainingWeight);
         }
         metalTotals[metalSummary.metalId].stoneCharges += metalSummary.remainingStoneCharges;
-        if (metalSummary.remainingWeight > 0 || metalSummary.remainingStoneCharges > 0) {
+        metalTotals[metalSummary.metalId].cashPending += (metalSummary.remainingCash || 0);
+        if (metalSummary.remainingWeight > 0 || metalSummary.remainingStoneCharges > 0 || (metalSummary.remainingCash || 0) > 0) {
           metalTotals[metalSummary.metalId].vepariCount += 1;
         }
       }
