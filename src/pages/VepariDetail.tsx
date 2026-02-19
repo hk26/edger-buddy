@@ -412,7 +412,7 @@ const VepariDetail = () => {
                         <Banknote className="h-4 w-4 text-blue-500" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Remaining</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Purchases Due</p>
                         <p className="number-display text-lg font-bold text-blue-500">₹{cashStats.remaining.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
@@ -504,13 +504,58 @@ const VepariDetail = () => {
                         <Gem className="h-4 w-4 text-amber-500" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Remaining</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Charges Due</p>
                         <p className="number-display text-lg font-bold text-amber-500">₹{remainingStoneCharges.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {/* Total Cash to Pay — combined summary */}
+            {(cashStats.remaining > 0 || remainingStoneCharges > 0) && (
+              <Card className="border-blue-500/30 bg-card">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+                        <Banknote className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Cash to Pay</p>
+                        <p className="number-display text-2xl font-bold text-blue-500">
+                          ₹{(cashStats.remaining + remainingStoneCharges).toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2 rounded-lg bg-muted/40 p-3">
+                    {cashStats.remaining > 0 && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Banknote className="h-3.5 w-3.5 text-blue-400" />
+                          <p className="text-xs text-muted-foreground">Cash Purchases Due</p>
+                        </div>
+                        <p className="number-display text-sm font-semibold text-blue-400">
+                          ₹{cashStats.remaining.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    )}
+                    {remainingStoneCharges > 0 && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Gem className="h-3.5 w-3.5 text-amber-500" />
+                          <p className="text-xs text-muted-foreground">Stone Charges Due</p>
+                        </div>
+                        <p className="number-display text-sm font-semibold text-amber-500">
+                          ₹{remainingStoneCharges.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
 
