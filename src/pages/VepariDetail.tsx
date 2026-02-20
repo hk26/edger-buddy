@@ -307,68 +307,66 @@ const VepariDetail = () => {
             })}
           </TabsList>
 
-          {/* Summary Cards */}
-          <div className="py-6 space-y-4">
+          {/* Summary Cards - Compact */}
+          <div className="py-4 space-y-3">
             {/* Regular Metal Summary */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
               <Card className="border-border/50 bg-card">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                      <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Purchased</p>
-                      <p className="number-display text-2xl font-bold text-foreground">{totalPurchased.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Purchased</p>
+                      <p className="number-display text-base font-bold text-foreground">{totalPurchased.toFixed(4)}<span className="ml-0.5 text-xs text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-border/50 bg-card">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                      <Wallet className="h-5 w-5 text-success" />
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-success/10">
+                      <Wallet className="h-3.5 w-3.5 text-success" />
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Paid</p>
-                      <p className="number-display text-2xl font-bold text-success">{totalPaid.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Paid</p>
+                      <p className="number-display text-base font-bold text-success">{totalPaid.toFixed(4)}<span className="ml-0.5 text-xs text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Pending card */}
               <Card className={`border-primary/30 bg-card ${pendingGrams > 0 ? 'card-glow' : ''} ${selectedColors?.border || ''}`}>
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${selectedColors?.bg || 'bg-primary/10'}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-full ${selectedColors?.bg || 'bg-primary/10'}`}>
                       {selectedMetal ? (
-                        <span className={`text-sm font-bold ${selectedColors?.text}`}>{selectedMetal.symbol}</span>
+                        <span className={`text-xs font-bold ${selectedColors?.text}`}>{selectedMetal.symbol}</span>
                       ) : (
-                        <Scale className="h-5 w-5 text-primary" />
+                        <Scale className="h-3.5 w-3.5 text-primary" />
                       )}
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Pending</p>
-                      <p className={`number-display text-2xl font-bold ${selectedColors?.text || 'text-primary'}`}>{pendingGrams.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pending</p>
+                      <p className={`number-display text-base font-bold ${selectedColors?.text || 'text-primary'}`}>{pendingGrams.toFixed(4)}<span className="ml-0.5 text-xs text-muted-foreground">g</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Advance/Credit card - only show if there's advance */}
               {advanceGrams > 0 && (
                 <Card className="border-emerald-500/30 bg-card">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
-                        <Wallet className="h-5 w-5 text-emerald-500" />
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10">
+                        <Wallet className="h-3.5 w-3.5 text-emerald-500" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Advance (Credit)</p>
-                        <p className="number-display text-2xl font-bold text-emerald-500">{advanceGrams.toFixed(4)}<span className="ml-1 text-sm text-muted-foreground">g</span></p>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Advance (Credit)</p>
+                        <p className="number-display text-base font-bold text-emerald-500">{advanceGrams.toFixed(4)}<span className="ml-0.5 text-xs text-muted-foreground">g</span></p>
                       </div>
                     </div>
                   </CardContent>
@@ -376,136 +374,80 @@ const VepariDetail = () => {
               )}
             </div>
 
-            {/* Cash Summary */}
-            {hasCashTransactions && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-blue-500/20 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
-                        <Banknote className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Bill Total</p>
-                        <p className="number-display text-lg font-bold text-foreground">₹{cashStats.purchased.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-border/50 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-                        <Banknote className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Paid</p>
-                        <p className="number-display text-lg font-bold text-success">₹{cashStats.paid.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-blue-500/30 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
-                        <Banknote className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Cash Purchases Due</p>
-                        <p className="number-display text-lg font-bold text-blue-500">₹{cashStats.remaining.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Cash & Stone Summary - inline compact */}
+            {(hasCashTransactions || totalStoneCharges > 0) && (
+              <div className="grid gap-3 grid-cols-3 md:grid-cols-6">
+                {hasCashTransactions && (
+                  <>
+                    <Card className="border-blue-500/20 bg-card">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash Bill</p>
+                        <p className="number-display text-sm font-bold text-foreground">₹{cashStats.purchased.toLocaleString('en-IN')}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-border/50 bg-card">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash Paid</p>
+                        <p className="number-display text-sm font-bold text-success">₹{cashStats.paid.toLocaleString('en-IN')}</p>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
+                {totalStoneCharges > 0 && (
+                  <>
+                    <Card className="border-border/50 bg-card">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Stone Total</p>
+                        <p className="number-display text-sm font-bold text-foreground">₹{totalStoneCharges.toLocaleString('en-IN')}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-border/50 bg-card">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Stone Paid</p>
+                        <p className="number-display text-sm font-bold text-success">₹{totalStoneChargesPaid.toLocaleString('en-IN')}</p>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
             )}
 
-            {/* Bullion Summary */}
+            {/* Bullion Summary - compact */}
             {hasBullionTransactions && (
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-3 grid-cols-3">
                 <Card className="border-purple-500/20 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
-                        <Flame className="h-4 w-4 text-purple-500" />
-                      </div>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-3.5 w-3.5 text-purple-500" />
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Fine Gold Given</p>
-                        <p className="number-display text-lg font-bold text-foreground">{bullionStats.fineGiven.toFixed(4)}g</p>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fine Given</p>
+                        <p className="number-display text-sm font-bold text-foreground">{bullionStats.fineGiven.toFixed(4)}g</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card className="border-border/50 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-                        <Flame className="h-4 w-4 text-success" />
-                      </div>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-3.5 w-3.5 text-success" />
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Fresh Metal Received</p>
-                        <p className="number-display text-lg font-bold text-success">{bullionStats.freshReceived.toFixed(4)}g</p>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fresh Received</p>
+                        <p className="number-display text-sm font-bold text-success">{bullionStats.freshReceived.toFixed(4)}g</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card className="border-purple-500/30 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
-                        <Flame className="h-4 w-4 text-purple-500" />
-                      </div>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-3.5 w-3.5 text-purple-500" />
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Bullion Balance</p>
-                        <p className={`number-display text-lg font-bold ${bullionStats.balanceGrams > 0 ? 'text-orange-500' : 'text-success'}`}>
-                          {bullionStats.balanceGrams > 0 ? '+' : ''}{bullionStats.balanceGrams.toFixed(4)}g
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {bullionStats.balanceGrams > 0 ? 'Pending to Pay' : bullionStats.balanceGrams < 0 ? 'Credit' : 'Balanced'}
                         </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Stone Charges */}
-            {totalStoneCharges > 0 && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-border/50 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
-                        <Gem className="h-4 w-4 text-amber-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Stone Charges</p>
-                        <p className="number-display text-lg font-bold text-foreground">₹{totalStoneCharges.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-border/50 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-                        <Gem className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Paid</p>
-                        <p className="number-display text-lg font-bold text-success">₹{totalStoneChargesPaid.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-amber-500/30 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
-                        <Gem className="h-4 w-4 text-amber-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Stone Charges Due</p>
-                        <p className="number-display text-lg font-bold text-amber-500">₹{remainingStoneCharges.toLocaleString('en-IN')}</p>
+                        <p className={`number-display text-sm font-bold ${bullionStats.balanceGrams > 0 ? 'text-orange-500' : bullionStats.balanceGrams < 0 ? 'text-success' : 'text-muted-foreground'}`}>
+                          {bullionStats.balanceGrams !== 0 ? `${Math.abs(bullionStats.balanceGrams).toFixed(4)}g` : '0g'}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -516,43 +458,33 @@ const VepariDetail = () => {
             {/* Total Cash to Pay — combined summary */}
             {(cashStats.remaining > 0 || remainingStoneCharges > 0) && (
               <Card className="border-blue-500/30 bg-card">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-                        <Banknote className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Cash to Pay</p>
-                        <p className="number-display text-2xl font-bold text-blue-500">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                      <Banknote className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Cash to Pay</p>
+                        <p className="number-display text-lg font-bold text-blue-500">
                           ₹{(cashStats.remaining + remainingStoneCharges).toLocaleString('en-IN')}
                         </p>
                       </div>
+                      <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
+                        {cashStats.remaining > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Banknote className="h-3 w-3 text-blue-400" />
+                            Cash: <span className="font-semibold text-blue-400">₹{cashStats.remaining.toLocaleString('en-IN')}</span>
+                          </span>
+                        )}
+                        {remainingStoneCharges > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Gem className="h-3 w-3 text-amber-500" />
+                            Stone: <span className="font-semibold text-amber-500">₹{remainingStoneCharges.toLocaleString('en-IN')}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 space-y-2 rounded-lg bg-muted/40 p-3">
-                    {cashStats.remaining > 0 && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Banknote className="h-3.5 w-3.5 text-blue-400" />
-                          <p className="text-xs text-muted-foreground">Cash Purchases Due</p>
-                        </div>
-                        <p className="number-display text-sm font-semibold text-blue-400">
-                          ₹{cashStats.remaining.toLocaleString('en-IN')}
-                        </p>
-                      </div>
-                    )}
-                    {remainingStoneCharges > 0 && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Gem className="h-3.5 w-3.5 text-amber-500" />
-                          <p className="text-xs text-muted-foreground">Stone Charges Due</p>
-                        </div>
-                        <p className="number-display text-sm font-semibold text-amber-500">
-                          ₹{remainingStoneCharges.toLocaleString('en-IN')}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>

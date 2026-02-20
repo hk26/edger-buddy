@@ -40,6 +40,7 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
   // Cash payment fields
   const [cashAmount, setCashAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('');
+  const [cashStoneChargesPaid, setCashStoneChargesPaid] = useState('');
   
   const [notes, setNotes] = useState('');
 
@@ -80,6 +81,7 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
         date,
         paymentType: 'cash',
         cashAmount: parseFloat(cashAmount),
+        stoneChargesPaid: cashStoneChargesPaid ? parseFloat(cashStoneChargesPaid) : undefined,
         paymentMode: paymentMode.trim() || undefined,
         notes: notes.trim() || undefined,
       });
@@ -97,6 +99,7 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
     setStoneChargesPaid('');
     setCashAmount('');
     setPaymentMode('');
+    setCashStoneChargesPaid('');
     setNotes('');
   };
 
@@ -264,12 +267,31 @@ export const AddPaymentDialog = ({ vepariId, metals, defaultMetalId, onAdd }: Ad
                   className="border-border/50 bg-secondary"
                 />
               </div>
-              {cashAmount && (
+              <div className="space-y-2">
+                <Label htmlFor="cashStoneChargesPaid">Stone Charges Paid ₹ (Optional)</Label>
+                <Input
+                  id="cashStoneChargesPaid"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cashStoneChargesPaid}
+                  onChange={(e) => setCashStoneChargesPaid(e.target.value)}
+                  placeholder="Stone charges being settled"
+                  className="border-border/50 bg-secondary"
+                />
+              </div>
+              {(cashAmount || cashStoneChargesPaid) && (
                 <div className="rounded-lg bg-blue-500/10 p-4">
                   <p className="text-sm text-muted-foreground">Cash Payment</p>
                   <p className="number-display text-2xl font-bold text-blue-500">
-                    ₹{parseFloat(cashAmount).toLocaleString('en-IN')}
+                    ₹{(parseFloat(cashAmount || '0') + parseFloat(cashStoneChargesPaid || '0')).toLocaleString('en-IN')}
                   </p>
+                  {cashAmount && parseFloat(cashAmount) > 0 && cashStoneChargesPaid && parseFloat(cashStoneChargesPaid) > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                      <p>Cash: ₹{parseFloat(cashAmount).toLocaleString('en-IN')}</p>
+                      <p>Stone: ₹{parseFloat(cashStoneChargesPaid).toLocaleString('en-IN')}</p>
+                    </div>
+                  )}
                   {paymentMode && (
                     <p className="mt-1 text-sm text-muted-foreground">via {paymentMode}</p>
                   )}
