@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -86,6 +86,26 @@ export const AddPurchaseDialog = ({ vepariId, vepari, metals, defaultMetalId, on
   const balanceCashAmount = convertBalanceToMoney && balanceRate && balanceGrams
     ? Math.abs(balanceGrams) * parseFloat(balanceRate) + (bullionLabourCharges ? parseFloat(bullionLabourCharges) : 0)
     : 0;
+
+  // Auto-calculate total amount for cash purchases
+  const calculatedCashTotal = useMemo(() => {
+    if (purchaseType !== 'cash') return 0;
+    const w = weightGrams ? parseFloat(weightGrams) : 0;
+    const r = ratePerGram ? parseFloat(ratePerGram) : 0;
+    const l = labourCharges ? parseFloat(labourCharges) : 0;
+    const s = stoneCharges ? parseFloat(stoneCharges) : 0;
+    if (w > 0 && r > 0) {
+      return w * r + l + s;
+    }
+    return 0;
+  }, [purchaseType, weightGrams, ratePerGram, labourCharges, stoneCharges]);
+
+  // Auto-fill total amount when calculated
+  useEffect(() => {
+    if (purchaseType === 'cash' && calculatedCashTotal > 0) {
+      setTotalAmount(calculatedCashTotal.toFixed(2));
+    }
+  }, [calculatedCashTotal, purchaseType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

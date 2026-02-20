@@ -425,13 +425,16 @@ export const useVepariData = () => {
         const regularPurchases = metalPurchases.filter(p => p.purchaseType === 'regular' || !p.purchaseType);
         const purchased = regularPurchases.reduce((sum, p) => sum + (p.weightGrams || 0), 0);
         
-        // Metal payments
+        // Metal payments (both metal-type and cash-type stone charges)
         const metalTypePayments = metalPayments.filter(p => p.paymentType === 'metal' || !p.paymentType);
+        const cashPaymentsForStone = metalPayments.filter(p => p.paymentType === 'cash');
         const paid = metalTypePayments.reduce((sum, p) => sum + (p.weightGrams || 0), 0);
         const remaining = purchased - paid;
 
+        // Stone charges paid from both metal payments and cash payments
         const stoneCharges = metalPurchases.reduce((sum, p) => sum + (p.stoneCharges || 0), 0);
-        const stoneChargesPaid = metalTypePayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
+        const stoneChargesPaid = metalTypePayments.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0)
+          + cashPaymentsForStone.reduce((sum, p) => sum + (p.stoneChargesPaid || 0), 0);
         const remainingStone = stoneCharges - stoneChargesPaid;
 
         // Cash purchases and payments
@@ -477,7 +480,7 @@ export const useVepariData = () => {
           metalColor: metal.color,
           totalPurchased: purchased,
           totalPaid: paid,
-          remainingWeight: remaining,
+          remainingWeight: remaining + bullionBalanceGrams, // Include bullion balance in remaining
           totalStoneCharges: stoneCharges,
           totalStoneChargesPaid: stoneChargesPaid,
           remainingStoneCharges: remainingStone,
@@ -493,7 +496,7 @@ export const useVepariData = () => {
           bullionBalanceCash,
         });
 
-        totalRemainingWeight += remaining;
+        totalRemainingWeight += remaining + bullionBalanceGrams;
         totalRemainingStoneCharges += remainingStone;
         totalOverdueCount += overdueCount;
 
