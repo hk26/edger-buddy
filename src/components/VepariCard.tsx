@@ -145,28 +145,31 @@ export const VepariCard = memo(({ vepari, metals, onClick }: VepariCardProps) =>
           </div>
         )}
 
-        {/* Total Cash to Pay (cash purchases + stone charges combined) */}
-        {totalCashToPay.total > 0 && (
+        {/* Total Cash to Pay / Cash Credit */}
+        {totalCashToPay.total !== 0 && (
           <div className="mt-3 border-t border-border/50 pt-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <IndianRupee className="h-4 w-4 text-amber-500" />
-                <p className="text-xs font-medium text-muted-foreground">Total Cash to Pay</p>
+                <IndianRupee className={`h-4 w-4 ${totalCashToPay.total > 0 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                <p className="text-xs font-medium text-muted-foreground">
+                  {totalCashToPay.total > 0 ? 'Total Cash to Pay' : 'Cash Credit'}
+                </p>
               </div>
-              <p className="number-display text-base font-bold text-amber-500">
-                ₹{totalCashToPay.total.toLocaleString('en-IN')}
+              <p className={`number-display text-base font-bold ${totalCashToPay.total > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                ₹{Math.abs(totalCashToPay.total).toLocaleString('en-IN')}
+                {totalCashToPay.total < 0 && <span className="text-xs font-normal ml-1">credit</span>}
               </p>
             </div>
             {/* Breakdown only if both exist */}
-            {totalCashToPay.cashDue > 0 && totalCashToPay.stoneDue > 0 && (
+            {totalCashToPay.cashDue !== 0 && totalCashToPay.stoneDue !== 0 && (
               <div className="mt-1.5 flex items-center justify-end gap-3 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Banknote className="h-3 w-3 text-blue-500" />
-                  ₹{totalCashToPay.cashDue.toLocaleString('en-IN')}
+                  {totalCashToPay.cashDue < 0 ? '-' : ''}₹{Math.abs(totalCashToPay.cashDue).toLocaleString('en-IN')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Gem className="h-3 w-3 text-amber-500" />
-                  ₹{totalCashToPay.stoneDue.toLocaleString('en-IN')}
+                  {totalCashToPay.stoneDue < 0 ? '-' : ''}₹{Math.abs(totalCashToPay.stoneDue).toLocaleString('en-IN')}
                 </span>
               </div>
             )}
