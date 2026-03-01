@@ -82,19 +82,36 @@ const Backup = () => {
           // === Vepari (Supplier) Data ===
           localStorage.setItem(STORAGE_KEYS.veparis, JSON.stringify(data.veparis));
           
-          // Migrate purchases if they don't have metalId or purchaseType
+          // Migrate purchases - ensure all fields exist for backward compatibility
           const migratedPurchases = data.purchases.map((p: any) => ({
             ...p,
             metalId: p.metalId || 'gold',
             purchaseType: p.purchaseType || 'regular',
+            // Cash purchase fields
+            totalAmount: p.totalAmount ?? undefined,
+            labourCharges: p.labourCharges ?? undefined,
+            // Bullion purchase fields
+            oldGoldWeight: p.oldGoldWeight ?? undefined,
+            oldGoldTouch: p.oldGoldTouch ?? undefined,
+            fineGoldCalculated: p.fineGoldCalculated ?? undefined,
+            freshMetalReceived: p.freshMetalReceived ?? undefined,
+            balanceGrams: p.balanceGrams ?? undefined,
+            balanceConvertedToMoney: p.balanceConvertedToMoney ?? undefined,
+            balanceRate: p.balanceRate ?? undefined,
+            balanceCashAmount: p.balanceCashAmount ?? undefined,
+            bullionLabourCharges: p.bullionLabourCharges ?? undefined,
           }));
           localStorage.setItem(STORAGE_KEYS.purchases, JSON.stringify(migratedPurchases));
           
-          // Migrate payments if they don't have metalId or paymentType
+          // Migrate payments - ensure all fields exist for backward compatibility
           const migratedPayments = data.payments.map((p: any) => ({
             ...p,
             metalId: p.metalId || 'gold',
             paymentType: p.paymentType || 'metal',
+            // Cash payment fields
+            cashAmount: p.cashAmount ?? undefined,
+            paymentMode: p.paymentMode ?? undefined,
+            stoneChargesPaid: p.stoneChargesPaid ?? undefined,
           }));
           localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(migratedPayments));
           
@@ -102,18 +119,18 @@ const Backup = () => {
           localStorage.setItem(STORAGE_KEYS.metals, JSON.stringify(data.metals || DEFAULT_METALS));
 
           // === Customer Ledger Data (optional - for backward compatibility) ===
-          if (data.customers) {
-            localStorage.setItem(STORAGE_KEYS.customers, JSON.stringify(data.customers));
-          }
-          if (data.customerPurchases) {
-            localStorage.setItem(STORAGE_KEYS.customerPurchases, JSON.stringify(data.customerPurchases));
-          }
-          if (data.customerPayments) {
-            localStorage.setItem(STORAGE_KEYS.customerPayments, JSON.stringify(data.customerPayments));
-          }
-          if (data.deliveryRecords) {
-            localStorage.setItem(STORAGE_KEYS.deliveryRecords, JSON.stringify(data.deliveryRecords));
-          }
+          // Always set these keys (empty array if not present in backup)
+          localStorage.setItem(STORAGE_KEYS.customers, JSON.stringify(data.customers || []));
+          
+          // Migrate customer purchases - ensure deliveredGrams field exists
+          const migratedCustomerPurchases = (data.customerPurchases || []).map((cp: any) => ({
+            ...cp,
+            deliveredGrams: cp.deliveredGrams ?? 0,
+          }));
+          localStorage.setItem(STORAGE_KEYS.customerPurchases, JSON.stringify(migratedCustomerPurchases));
+          
+          localStorage.setItem(STORAGE_KEYS.customerPayments, JSON.stringify(data.customerPayments || []));
+          localStorage.setItem(STORAGE_KEYS.deliveryRecords, JSON.stringify(data.deliveryRecords || []));
 
           toast.success('Backup imported successfully! Redirecting...');
           

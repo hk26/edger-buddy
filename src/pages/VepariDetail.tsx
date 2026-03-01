@@ -322,23 +322,23 @@ const VepariDetail = () => {
                   </div>
                   <h3 className="text-sm font-semibold text-foreground">Metal Balance</h3>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Purchased</span>
-                    <span className="number-display text-sm font-semibold text-foreground">{totalPurchased.toFixed(4)}g</span>
+                    <span className="text-base text-muted-foreground">Purchased</span>
+                    <span className="number-display text-base font-semibold text-foreground">{totalPurchased.toFixed(4)}g</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Paid</span>
-                    <span className="number-display text-sm font-semibold text-success">{totalPaid.toFixed(4)}g</span>
+                    <span className="text-base text-muted-foreground">Paid</span>
+                    <span className="number-display text-base font-semibold text-success">{totalPaid.toFixed(4)}g</span>
                   </div>
                   <div className="border-t border-border/50 pt-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Pending</span>
-                    <span className={`number-display text-lg font-bold ${selectedColors?.text || 'text-primary'}`}>{pendingGrams.toFixed(4)}g</span>
+                    <span className="text-base font-medium text-muted-foreground">Pending</span>
+                    <span className={`number-display text-xl font-bold ${selectedColors?.text || 'text-primary'}`}>{pendingGrams.toFixed(4)}g</span>
                   </div>
                   {advanceGrams > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-emerald-500">Advance (Credit)</span>
-                      <span className="number-display text-sm font-semibold text-emerald-500">{advanceGrams.toFixed(4)}g</span>
+                      <span className="text-base text-emerald-500">Advance (Credit)</span>
+                      <span className="number-display text-base font-semibold text-emerald-500">{advanceGrams.toFixed(4)}g</span>
                     </div>
                   )}
                 </div>
@@ -355,45 +355,47 @@ const VepariDetail = () => {
                     </div>
                     <h3 className="text-sm font-semibold text-foreground">Cash Balance</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {hasCashTransactions && (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Cash Bill</span>
-                          <span className="number-display text-sm font-semibold text-foreground">₹{cashStats.purchased.toLocaleString('en-IN')}</span>
+                          <span className="text-base text-muted-foreground">Cash Bill</span>
+                          <span className="number-display text-base font-semibold text-foreground">₹{cashStats.purchased.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Cash Paid</span>
-                          <span className="number-display text-sm font-semibold text-success">₹{cashStats.paid.toLocaleString('en-IN')}</span>
+                          <span className="text-base text-muted-foreground">Cash Paid</span>
+                          <span className="number-display text-base font-semibold text-success">₹{cashStats.paid.toLocaleString('en-IN')}</span>
                         </div>
                       </>
                     )}
                     {totalStoneCharges > 0 && (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Gem className="h-3 w-3 text-amber-500" />Stone Charges
+                          <span className="flex items-center gap-1 text-base text-muted-foreground">
+                            <Gem className="h-3.5 w-3.5 text-amber-500" />Stone Charges
                           </span>
-                          <span className="number-display text-sm font-semibold text-foreground">₹{totalStoneCharges.toLocaleString('en-IN')}</span>
+                          <span className="number-display text-base font-semibold text-foreground">₹{totalStoneCharges.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Stone Paid</span>
-                          <span className="number-display text-sm font-semibold text-success">₹{totalStoneChargesPaid.toLocaleString('en-IN')}</span>
+                          <span className="text-base text-muted-foreground">Stone Paid</span>
+                          <span className="number-display text-base font-semibold text-success">₹{totalStoneChargesPaid.toLocaleString('en-IN')}</span>
                         </div>
                       </>
                     )}
-                    {(cashStats.remaining > 0 || remainingStoneCharges > 0) && (
+                    {(cashStats.remaining !== 0 || remainingStoneCharges !== 0) && (
                       <div className="border-t border-border/50 pt-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-muted-foreground">Total Cash to Pay</span>
-                          <span className="number-display text-lg font-bold text-blue-500">
-                            ₹{(cashStats.remaining + remainingStoneCharges).toLocaleString('en-IN')}
+                          <span className="text-base font-medium text-muted-foreground">
+                            {(cashStats.remaining + remainingStoneCharges) > 0 ? 'Total Cash to Pay' : 'Cash Credit'}
+                          </span>
+                          <span className={`number-display text-xl font-bold ${(cashStats.remaining + remainingStoneCharges) > 0 ? 'text-blue-500' : 'text-emerald-500'}`}>
+                            ₹{Math.abs(cashStats.remaining + remainingStoneCharges).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        {cashStats.remaining > 0 && remainingStoneCharges > 0 && (
-                          <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-                            <span>Cash: <span className="font-medium text-blue-400">₹{cashStats.remaining.toLocaleString('en-IN')}</span></span>
-                            <span>Stone: <span className="font-medium text-amber-500">₹{remainingStoneCharges.toLocaleString('en-IN')}</span></span>
+                        {cashStats.remaining !== 0 && remainingStoneCharges !== 0 && (
+                          <div className="mt-1 flex gap-3 text-sm text-muted-foreground">
+                            <span>Cash: <span className="font-medium text-blue-400">₹{Math.abs(cashStats.remaining).toLocaleString('en-IN')}</span></span>
+                            <span>Stone: <span className="font-medium text-amber-500">₹{Math.abs(remainingStoneCharges).toLocaleString('en-IN')}</span></span>
                           </div>
                         )}
                       </div>
@@ -413,20 +415,20 @@ const VepariDetail = () => {
                     </div>
                     <h3 className="text-sm font-semibold text-foreground">Bullion Exchange</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Fine Gold Given</span>
-                      <span className="number-display text-sm font-semibold text-foreground">{bullionStats.fineGiven.toFixed(4)}g</span>
+                      <span className="text-base text-muted-foreground">Fine Gold Given</span>
+                      <span className="number-display text-base font-semibold text-foreground">{bullionStats.fineGiven.toFixed(4)}g</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Fresh Metal Received</span>
-                      <span className="number-display text-sm font-semibold text-success">{bullionStats.freshReceived.toFixed(4)}g</span>
+                      <span className="text-base text-muted-foreground">Fresh Metal Received</span>
+                      <span className="number-display text-base font-semibold text-success">{bullionStats.freshReceived.toFixed(4)}g</span>
                     </div>
                     <div className="border-t border-border/50 pt-2 flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">
+                      <span className="text-base font-medium text-muted-foreground">
                         {bullionStats.balanceGrams > 0 ? 'Pending to Pay' : bullionStats.balanceGrams < 0 ? 'Credit' : 'Balanced'}
                       </span>
-                      <span className={`number-display text-lg font-bold ${
+                      <span className={`number-display text-xl font-bold ${
                         bullionStats.balanceGrams > 0 ? 'text-orange-500' : bullionStats.balanceGrams < 0 ? 'text-success' : 'text-muted-foreground'
                       }`}>
                         {bullionStats.balanceGrams !== 0 ? `${Math.abs(bullionStats.balanceGrams).toFixed(4)}g` : '0g'}
