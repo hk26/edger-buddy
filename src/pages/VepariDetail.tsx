@@ -216,6 +216,66 @@ const VepariDetail = () => {
     [purchases, payments]
   );
 
+  // Running balances per metal, computed chronologically (oldest -> newest)
+  // and keyed by transaction id. Each entry reflects the state AFTER that
+  // transaction within its own metal ledger. Backward compatible: every
+  // field defaults to 0 when missing.
+  const runningBalanceMap = useMemo(() => {
+    const map = new Map<string, { metalGrams: number; cash: number }>();
+    // Group all transactions per metal across full ledger (ignore tab filter
+    // so running balance is always per the entry's own metal).
+    const byMetal = new Map<string, Array<
+      | (Purchase & { _type: 'purchase' })
+      | (Payment & { _type: 'payment' })
+    >>();
+    allPurchases.forEach((p) => {
+      const arr = byMetal.get(p.metalId) || [];
+      arr.push({ ...p, _type: 'purchase' });
+      byMetal.set(p.metalId, arr);
+    });
+    allPayments.forEach((p) => {
+      const arr = byMetal.get(p.metalId) || [];
+      arr.push({ ...p, _type: 'payment' });
+      byMetal.set(p.metalId, arr);
+    });
+
+    byMetal.forEach((items) => {
+      items.sort((a, b) => {
+        const d = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return d !== 0 ? d : a.id.localeCompare(b.id);
+      });
+      let metalGrams = 0; // pending grams (positive = owed to vepari)
+      let cash = 0;       // pending cash (positive = owed to vepari)
+      items.forEach((t) => {
+        if (t._type === 'purchase') {
+          const p = t as Purchase;
+          if (p.purchaseType === 'cash') {
+            cash += p.totalAmount || 0;
+          } else if (p.purchaseType === 'bullion') {
+            metalGrams += p.balanceGrams || 0;
+            cash += p.bullionLabourCharges || 0;
+            if (p.balanceConvertedToMoney) {
+              cash += p.balanceCashAmount || 0;
+            }
+          } else {
+            metalGrams += p.weightGrams || 0;
+            cash += p.stoneCharges || 0;
+          }
+        } else {
+          const pay = t as Payment;
+          if (pay.paymentType === 'cash') {
+            cash -= pay.cashAmount || 0;
+          } else {
+            metalGrams -= pay.weightGrams || 0;
+          }
+          cash -= pay.stoneChargesPaid || 0;
+        }
+        map.set(t.id, { metalGrams, cash });
+      });
+    });
+    return map;
+  }, [allPurchases, allPayments]);
+
   const selectedMetal = useMemo(() => 
     selectedMetalId !== 'all' ? metalMap.get(selectedMetalId) : null,
     [selectedMetalId, metalMap]
@@ -476,6 +536,7 @@ const VepariDetail = () => {
                       remainingGrams={remainingGrams}
                       showMetal={selectedMetalId === 'all'}
                       status={status}
+                      runningBalance={runningBalanceMap.get(transaction.id)}
                       onUpdatePurchase={updatePurchase}
                       onUpdatePayment={updatePayment}
                       onDeletePurchase={deletePurchase}

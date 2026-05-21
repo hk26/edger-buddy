@@ -40,6 +40,7 @@ interface TransactionCardProps {
   remainingGrams: number;
   showMetal: boolean;
   status: PurchaseStatus;
+  runningBalance?: { metalGrams: number; cash: number };
   onUpdatePurchase: (id: string, updates: Partial<Omit<Purchase, 'id' | 'vepariId'>>) => void;
   onUpdatePayment: (id: string, updates: Partial<Omit<Payment, 'id' | 'vepariId'>>) => void;
   onDeletePurchase: (id: string) => void;
@@ -288,6 +289,7 @@ export const TransactionCard = memo(({
   remainingGrams,
   showMetal,
   status,
+  runningBalance,
   onUpdatePurchase,
   onUpdatePayment,
   onDeletePurchase,
@@ -461,6 +463,48 @@ export const TransactionCard = memo(({
             </div>
           </div>
         </div>
+
+        {runningBalance && (
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 border-t border-border/50 pt-2 text-xs">
+            <span className="text-muted-foreground">After this entry:</span>
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">Metal</span>
+              <span
+                className={`number-display font-semibold ${
+                  runningBalance.metalGrams > 0
+                    ? 'text-primary'
+                    : runningBalance.metalGrams < 0
+                    ? 'text-emerald-500'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {runningBalance.metalGrams === 0
+                  ? '0g'
+                  : `${Math.abs(runningBalance.metalGrams).toFixed(4)}g ${
+                      runningBalance.metalGrams > 0 ? 'pending' : 'credit'
+                    }`}
+              </span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">Cash</span>
+              <span
+                className={`number-display font-semibold ${
+                  runningBalance.cash > 0
+                    ? 'text-blue-500'
+                    : runningBalance.cash < 0
+                    ? 'text-emerald-500'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {runningBalance.cash === 0
+                  ? '₹0'
+                  : `₹${Math.abs(runningBalance.cash).toLocaleString('en-IN')} ${
+                      runningBalance.cash > 0 ? 'pending' : 'credit'
+                    }`}
+              </span>
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
